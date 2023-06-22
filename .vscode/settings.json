@@ -1,0 +1,70 @@
+{
+    // ファイル最後の一行（EOF用）の追加や、ファイルのいらない空白の削除を行う
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+
+    // pythonのvscode側の初期設定
+    "[python]": {
+        "editor.tabSize": 4,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.black-formatter",
+    },
+
+    // 自作パッケージなどを扱いたい場合はこれをやっておくと確実
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}./src"
+    ],
+    // poetryで作った仮想環境のpythonインタープリタを確実に選ばれるように
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+    // blackの設定
+    "black-formatter.path": [
+        "${workspaceFolder}/.venv/bin/black"
+    ],
+
+    // isortの設定
+    "isort.path": [
+        "${workspaceFolder}/.venv/bin/isort",
+    ],
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true,
+    },
+
+    // flake8の設定
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "flake8.args": [
+        "--ignore=E203, W503",
+    // E203: ":"の前の空白を入れないルール
+    // W503: 演算子の前に改行しないようにするルール
+    "--max-complexity=10",
+    ],
+    "flake8.path": [
+        "${workspaceFolder}/.venv/bin/flake8"
+    ],
+
+    // mypyの設定
+    "python.linting.mypyEnabled": true,
+    "python.linting.mypyPath": "${workspaceFolder}/.venv/bin/mypy",
+    "python.analysis.typeCheckingMode": "basic",
+
+    // docstring のスタイル お好きに
+    "autoDocstring.docstringFormat": "numpy",
+    "cSpell.words": [
+        "cuda",
+        "CVAE",
+        "kaiming",
+        "logvar",
+        "omegaconf",
+        "optim",
+        "randn",
+        "reconst",
+        "relu",
+        "reparameterization",
+        "SECAE",
+        "SECVAE",
+        "softplus",
+        "torchinfo",
+        "torchvision"
+    ],
+}

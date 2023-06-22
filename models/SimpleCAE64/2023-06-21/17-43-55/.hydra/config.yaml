@@ -1,0 +1,16 @@
+model:
+  name: SimpleCAE64
+  input_channels: 1
+  latent_dimensions: 128
+  encoder_base_channels: 64
+  decoder_base_channels: 64
+  encoder_activation: relu
+  decoder_activation: relu
+  encoder_output_activation: relu
+  decoder_output_activation: relu
+train:
+  lr: 0.001
+  epochs: 100
+  batch_size: 128
+  EarlyStopping: false
+trained_save_path: ./models/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}

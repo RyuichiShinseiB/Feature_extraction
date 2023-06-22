@@ -1,0 +1,24 @@
+model:
+  name: SimpleCAE64
+  hyper_parameters:
+    input_channels: 1
+    latent_dimensions: 128
+    encoder_base_channels: 64
+    decoder_base_channels: 64
+    encoder_activation: "relu"
+    decoder_activation: "relu"
+    encoder_output_activation: "relu"
+    decoder_output_activation: "relu"
+
+train:
+  lr: 1e-3
+  epochs: 100
+  batch_size: 128
+  early_stopping: False
+
+dataset_path: ./data/processed/CNTForest/cnt_sem_32x32/10k
+trained_save_path: ./models/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+hydra:
+  run:
+    dir: ${trained_save_path}

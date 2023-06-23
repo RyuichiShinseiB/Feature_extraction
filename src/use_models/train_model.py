@@ -9,7 +9,7 @@ from torch import nn, optim
 # First Party Library
 from src import Tensor
 from src.configs.model_configs import MyConfig
-from src.defined_models import model_define
+from src.predefined_models import model_define
 from src.utilities import (
     EarlyStopping,
     get_dataloader,

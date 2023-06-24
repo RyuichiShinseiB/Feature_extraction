@@ -14,10 +14,19 @@ train:
   lr: 1e-3
   epochs: 100
   batch_size: 128
+  loss: bce
+  num_save_reconst_image: 5
   early_stopping: False
+  trained_save_path: ./models/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
 
-dataset_path: ./data/processed/CNTForest/cnt_sem_32x32/10k
-trained_save_path: ./models/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+dataset:
+  image_target: CNTForest
+  path: ./data/processed/CNTForest/cnt_sem_32x32/10k
+  transform:
+    Grayscale: 1
+    RandomVerticalFlip: 0.5
+    RandomHorizontalFlip: 0.5
+    ToTensor: 0
 
 hydra:
   run:

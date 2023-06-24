@@ -2,14 +2,8 @@
 from torch import nn
 
 # Local Library
-from ._modules import (
-    ActivationName,
-    Device,
-    DownShape,
-    SELayer,
-    Tensor,
-    UpShape,
-)
+from .. import ActivationName, Device, Tensor
+from ._modules import DownShape, SELayer, UpShape
 
 
 class Encoder(nn.Module):
@@ -151,7 +145,7 @@ class Decoder(nn.Module):
 ########################################
 
 
-class SECAE(nn.Module):
+class SECAE64(nn.Module):
     def __init__(
         self,
         input_channels: int,
@@ -164,7 +158,7 @@ class SECAE(nn.Module):
         decoder_output_activation: ActivationName = "tanh",
         device: Device = "cpu",
     ) -> None:
-        super(SECAE, self).__init__()
+        super(SECAE64, self).__init__()
         self.device = device
         self.encoder = Encoder(
             input_channels,

@@ -5,7 +5,8 @@ from typing import Callable
 from torch import nn
 
 # Local Library
-from ._modules import ActivationName, Device, Tensor, add_activation
+from .. import ActivationName, Device, Tensor
+from ._modules import add_activation
 
 
 class Encoder(nn.Module):
@@ -164,7 +165,7 @@ class Decoder(nn.Module):
         return x
 
 
-class SimpleCAE(nn.Module):
+class SimpleCAE32(nn.Module):
     def __init__(
         self,
         input_channels: int,
@@ -177,7 +178,7 @@ class SimpleCAE(nn.Module):
         decoder_output_activation: ActivationName = "sigmoid",
         device: Device = "cpu",
     ) -> None:
-        super(SimpleCAE, self).__init__()
+        super(SimpleCAE32, self).__init__()
         self.device = device
         self.encoder: Callable[[Tensor], Tensor] = Encoder(
             input_channels,
@@ -206,6 +207,6 @@ if __name__ == "__main__":
     # Third Party Library
     from torchinfo import summary
 
-    model = SimpleCAE(1, 64, 64, 64, device="cuda")
+    model = SimpleCAE32(1, 64, 64, 64, device="cuda")
 
     summary(model, (64, 1, 32, 32))

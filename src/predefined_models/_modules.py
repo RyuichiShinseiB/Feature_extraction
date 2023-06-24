@@ -1,16 +1,13 @@
 # Standard Library
-from typing import Literal, TypeAlias, Union
+from typing import Literal, Union
 
 # Third Party Library
 import torch
 import torch.nn.functional as nn_func
 from torch import nn
 
-ActivationName = Literal[
-    "relu", "selu", "leakyrelu", "sigmoid", "tanh", "identity"
-]
-Device: TypeAlias = Literal["cpu", "cuda"] | torch.device
-Tensor: TypeAlias = torch.Tensor
+# First Party Library
+from src import ActivationName, Tensor
 
 
 def conv2d3x3(in_ch: int, out_ch: int, stride: int = 1) -> nn.Conv2d:
@@ -101,7 +98,7 @@ def add_activation(
         return nn.Identity()
     else:
         raise RuntimeError(
-            f'There is no activation function like "{activation}"'
+            f'There is no activation function such as "{activation}"'
         )
 
 

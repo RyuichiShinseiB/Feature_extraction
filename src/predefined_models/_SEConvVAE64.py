@@ -3,15 +3,8 @@ import torch
 from torch import nn
 
 # Local Library
-from ._modules import (
-    ActivationName,
-    Device,
-    DownShape,
-    SELayer,
-    Tensor,
-    UpShape,
-    add_activation,
-)
+from .. import ActivationName, Device, Tensor
+from ._modules import DownShape, SELayer, UpShape, add_activation
 
 
 class VariationalSEEncoder(nn.Module):
@@ -201,7 +194,7 @@ class VariationalDecoder(nn.Module):
 
 
 ###################################################################
-class SECVAE(nn.Module):
+class SECVAE64(nn.Module):
     def __init__(
         self,
         input_channels: int = 1,

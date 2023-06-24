@@ -3,14 +3,8 @@ import torch
 from torch import nn
 
 # Local Library
-from ._modules import (
-    ActivationName,
-    Device,
-    DownShape,
-    Tensor,
-    UpShape,
-    add_activation,
-)
+from .. import ActivationName, Device, Tensor
+from ._modules import DownShape, UpShape, add_activation
 
 
 class VariationalEncoder(nn.Module):
@@ -113,7 +107,7 @@ class VariationalDecoder(nn.Module):
 
 
 ###################################################################
-class SimpleCVAE(nn.Module):
+class SimpleCVAEsoftplus64(nn.Module):
     def __init__(
         self,
         input_channels: int = 1,

@@ -2,7 +2,8 @@
 from torch import nn
 
 # Local Library
-from ._modules import ActivationName, Device, Tensor, add_activation
+from .. import ActivationName, Device, Tensor
+from ._modules import add_activation
 
 
 class Encoder(nn.Module):
@@ -187,7 +188,7 @@ class Decoder(nn.Module):
         return x
 
 
-class SimpleCAE(nn.Module):
+class SimpleCAE64(nn.Module):
     def __init__(
         self,
         input_channels: int,
@@ -200,7 +201,7 @@ class SimpleCAE(nn.Module):
         decoder_output_activation: ActivationName = "tanh",
         device: Device = "cpu",
     ) -> None:
-        super(SimpleCAE, self).__init__()
+        super(SimpleCAE64, self).__init__()
         self.device = device
 
         self.encoder = Encoder(
@@ -231,6 +232,6 @@ if __name__ == "__main__":
     # Third Party Library
     from torchinfo import summary
 
-    model = SimpleCAE(1, 16, 16, 10, device="cuda")
+    model = SimpleCAE64(1, 16, 16, 10, device="cuda")
 
     summary(model, (1, 1, 64, 64))

@@ -2,14 +2,8 @@
 from torch import nn
 
 # Local Library
-from ._modules import (
-    ActivationName,
-    Device,
-    DownShape,
-    SELayer,
-    Tensor,
-    UpShape,
-)
+from .. import ActivationName, Device, Tensor
+from ._modules import DownShape, SELayer, UpShape
 
 
 class Encoder(nn.Module):
@@ -128,7 +122,7 @@ class Decoder(nn.Module):
 ########################################
 
 
-class SECAE(nn.Module):
+class SECAE32(nn.Module):
     def __init__(
         self,
         input_channels: int,
@@ -141,7 +135,7 @@ class SECAE(nn.Module):
         decoder_output_activation: ActivationName = "tanh",
         device: Device = "cpu",
     ) -> None:
-        super(SECAE, self).__init__()
+        super(SECAE32, self).__init__()
         self.device = device
         self.encoder = Encoder(
             input_channels,
@@ -170,5 +164,5 @@ if __name__ == "__main__":
     # Third Party Library
     from torchinfo import summary
 
-    model = SECAE(1, 100, 64, 64)
+    model = SECAE32(1, 100, 64, 64)
     summary(model, (1, 1, 32, 32))

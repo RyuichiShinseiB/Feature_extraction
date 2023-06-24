@@ -46,13 +46,14 @@
     // mypyの設定
     "python.linting.mypyEnabled": true,
     "python.linting.mypyPath": "${workspaceFolder}/.venv/bin/mypy",
-    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.typeCheckingMode": "off",
 
     // docstring のスタイル お好きに
     "autoDocstring.docstringFormat": "numpy",
     "cSpell.words": [
         "cuda",
         "CVAE",
+        "Grayscale",
         "kaiming",
         "logvar",
         "omegaconf",

@@ -17,7 +17,7 @@ train:
   loss: bce
   num_save_reconst_image: 5
   early_stopping: False
-  trained_save_path: ./models/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  trained_save_path: /${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
 
 dataset:
   image_target: CNTForest
@@ -30,4 +30,4 @@ dataset:
 
 hydra:
   run:
-    dir: ${trained_save_path}
+    dir: ./model/${trained_save_path}

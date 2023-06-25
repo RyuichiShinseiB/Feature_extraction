@@ -1,4 +1,5 @@
 # Standard Library
+from pathlib import Path
 from typing import Any, Callable, Literal, Optional, TypeAlias
 
 # Third Party Library
@@ -134,7 +135,10 @@ class EarlyStopping:
         self.force_cancel: bool = False
 
     def __call__(
-        self, val_loss: float | Any, model: Model, save_path: Optional[str]
+        self,
+        val_loss: float | Any,
+        model: Model,
+        save_path: Optional[str | Path],
     ) -> None:
         score: float = -val_loss
 
@@ -154,7 +158,10 @@ class EarlyStopping:
             self.counter = 0
 
     def save_checkpoint(
-        self, val_loss: float | Any, model: Model, save_path: Optional[str]
+        self,
+        val_loss: float | Any,
+        model: Model,
+        save_path: Optional[str | Path],
     ) -> None:
         if self.verbose:
             print(

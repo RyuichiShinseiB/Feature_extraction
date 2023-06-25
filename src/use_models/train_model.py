@@ -1,9 +1,12 @@
 # Standard Library
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any
 
 # Third Party Library
 import hydra
+import matplotlib.pyplot as plt
 import torch
+import torchvision.utils as vutils
 from torch import nn, optim
 
 # First Party Library
@@ -15,6 +18,16 @@ from src.utilities import EarlyStopping, calc_loss, get_dataloader, weight_init
 
 @hydra.main(version_base=None, config_path="", config_name="")
 def main(cfg: MyConfig) -> None:
+    # 訓練済みモデル、訓練途中の再構成画像のパス
+    base_save_path = Path(cfg.train_cfg.trained_save_path)
+    model_save_path = "./model" / base_save_path
+    figure_save_path = "./reports/figure" / base_save_path
+
+    # 再構成画像を保存する間隔
+    save_interval = (
+        cfg.train_cfg.epochs // cfg.train_cfg.num_save_reconst_image
+    )
+
     # CPUで計算するかGPUで計算するかを取得
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -23,13 +36,9 @@ def main(cfg: MyConfig) -> None:
     # 重みの初期化
     model.apply(weight_init)
 
-    # Early stoppingを使うかどうか
-    # 使用する場合、過学習を防ぐためにepochの途中で終了する
-    early_stopping: Optional[EarlyStopping]
-    if cfg.train_cfg.early_stopping:
-        early_stopping = EarlyStopping()
-    else:
-        early_stopping = None
+    # Early stoppingの宣言
+    # 過学習を防ぐためにepochの途中で終了する
+    early_stopping = EarlyStopping()
 
     # データローダーを設定
     # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、
@@ -99,12 +108,26 @@ def main(cfg: MyConfig) -> None:
                 valid_loss / (_i_valid + 1),
             )
         )
-        if (
-            epoch
-            % (cfg.train_cfg.epochs // cfg.train_cfg.num_save_reconst_image)
-            == 0
-        ):
+        if epoch % save_interval == 0:
             reconst_images.append(x_pred)
 
         if cfg.train_cfg.early_stopping:
-            early_stopping(train_loss, model, cfg.train_cfg.trained_save_path)
+            early_stopping(
+                train_loss, model, save_path=model_save_path / "model.pth"
+            )
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.plot(len(train_losses), train_losses, label="train loss")
+    ax.set_xlabel("iterations")
+    ax.set_ylabel(f"{cfg.train_cfg.loss.upper()} loss")
+    ax.legend()
+    fig.savefig(figure_save_path / "loss.jpg")
+
+    for i, reconst_image in enumerate(reconst_images):
+        vutils.save_image(
+            vutils.make_grid(reconst_image, normalize=True),
+            fp=figure_save_path / f"reconst_images{i*save_interval:03}.png",
+        )
+
+    torch.save(model.state_dict(), model_save_path / "model.pth")

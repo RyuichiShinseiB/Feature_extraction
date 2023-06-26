@@ -56,16 +56,22 @@
         "Grayscale",
         "kaiming",
         "logvar",
+        "matplotlib",
         "omegaconf",
         "optim",
+        "pyplot",
         "randn",
         "reconst",
         "relu",
         "reparameterization",
+        "savefig",
         "SECAE",
         "SECVAE",
         "softplus",
         "torchinfo",
-        "torchvision"
+        "torchvision",
+        "vutils",
+        "xlabel",
+        "ylabel"
     ],
 }

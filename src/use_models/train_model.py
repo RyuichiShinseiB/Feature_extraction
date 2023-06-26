@@ -16,12 +16,16 @@ from src.predefined_models import model_define
 from src.utilities import EarlyStopping, calc_loss, get_dataloader, weight_init
 
 
-@hydra.main(version_base=None, config_path="", config_name="")
+@hydra.main(
+    version_base=None, config_path="../configs/conf", config_name="configs"
+)
 def main(cfg: MyConfig) -> None:
     # 訓練済みモデル、訓練途中の再構成画像のパス
+    print("Ran")
     base_save_path = Path(cfg.train_cfg.trained_save_path)
     model_save_path = "./model" / base_save_path
     figure_save_path = "./reports/figure" / base_save_path
+    print("Ran")
 
     # 再構成画像を保存する間隔
     save_interval = (
@@ -131,3 +135,7 @@ def main(cfg: MyConfig) -> None:
         )
 
     torch.save(model.state_dict(), model_save_path / "model.pth")
+
+
+if __name__ == "__main__":
+    main()

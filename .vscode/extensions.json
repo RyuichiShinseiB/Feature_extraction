@@ -7,6 +7,7 @@
         "kevinrose.vsc-python-indent",
         "oderwat.indent-rainbow",
         "christian-kohler.path-intellisense",
-        "njpwerner.autodocstring"
+        "njpwerner.autodocstring",
+        "streetsidesoftware.code-spell-checker"
     ]
 }

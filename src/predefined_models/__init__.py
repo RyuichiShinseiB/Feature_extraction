@@ -3,6 +3,7 @@ from dataclasses import asdict
 
 # Third Party Library
 import torch
+from omegaconf import DictConfig, OmegaConf
 
 # First Party Library
 from src.configs.model_configs import ModelConfig
@@ -20,8 +21,19 @@ from ._SimpleConvVAE64 import SimpleCVAE64
 from ._SimpleConvVAE_softplus64 import SimpleCVAEsoftplus64
 
 
+def set_hyper_parameters(
+    model_cfg: ModelConfig | DictConfig,
+) -> dict[str, int | str]:
+    if isinstance(model_cfg, ModelConfig):
+        return asdict(model_cfg.hyper_parameters)
+    elif isinstance(model_cfg, DictConfig):
+        return OmegaConf.to_object(model_cfg.hyper_parameters)
+    else:
+        raise ValueError("model_cfg is not ModelConfig or DictConfig")
+
+
 def model_define(
-    model_cfg: ModelConfig, device: Device = "cpu"
+    model_cfg: ModelConfig | DictConfig, device: Device = "cpu"
 ) -> (
     torch.nn.Module
     # SECAE32
@@ -35,7 +47,8 @@ def model_define(
     # | SimpleCVAE_softplus64
 ):
     model_name = model_cfg.name
-    hyper_parameters = asdict(model_cfg.hyper_parameters)
+    hyper_parameters = set_hyper_parameters(model_cfg)
+
     if model_name == "SECAE32":
         return SECAE32(**hyper_parameters, device=device)
     elif model_name == "SECAE64":

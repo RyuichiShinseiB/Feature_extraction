@@ -1,5 +1,5 @@
 # Standard Library
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 # Third Party Library
@@ -43,12 +43,7 @@ class TrainConfig:
 class DatasetConfig:
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
     path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
-    transform: TransformsNameValue = {
-        "Grayscale": 1,
-        "RandomVerticalFlip": 0.5,
-        "RandomHorizontalFlip": 0.5,
-        "ToTensor": None,
-    }
+    transform: TransformsNameValue = field(default_factory=dict)
 
 
 @dataclass

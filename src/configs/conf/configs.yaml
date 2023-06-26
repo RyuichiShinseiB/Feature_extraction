@@ -30,4 +30,4 @@ dataset:
 
 hydra:
   run:
-    dir: ./model/${trained_save_path}
+    dir: ./model/${train.trained_save_path}

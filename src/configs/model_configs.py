@@ -36,7 +36,7 @@ class TrainConfig:
     loss: str = "bce"
     num_save_reconst_image: int = 5
     early_stopping: bool = False
-    trained_save_path: str = "./model"
+    trained_save_path: str = "./models"
 
 
 @dataclass
@@ -48,9 +48,9 @@ class DatasetConfig:
 
 @dataclass
 class MyConfig:
-    model_cfg: ModelConfig = ModelConfig()
-    train_cfg: TrainConfig = TrainConfig()
-    dataset_cfg: DatasetConfig = DatasetConfig()
+    model: ModelConfig = ModelConfig()
+    train: TrainConfig = TrainConfig()
+    dataset: DatasetConfig = DatasetConfig()
     hydra: Any | None = None
 
 

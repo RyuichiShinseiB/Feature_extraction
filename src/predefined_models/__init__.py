@@ -1,5 +1,6 @@
 # Standard Library
 from dataclasses import asdict
+from typing import Any
 
 # Third Party Library
 import torch
@@ -23,7 +24,7 @@ from ._SimpleConvVAE_softplus64 import SimpleCVAEsoftplus64
 
 def set_hyper_parameters(
     model_cfg: ModelConfig | DictConfig,
-) -> dict[str, int | str]:
+) -> dict[str, int | str] | Any:
     if isinstance(model_cfg, ModelConfig):
         return asdict(model_cfg.hyper_parameters)
     elif isinstance(model_cfg, DictConfig):

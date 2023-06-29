@@ -8,13 +8,14 @@ model:
     encoder_activation: "relu"
     decoder_activation: "relu"
     encoder_output_activation: "relu"
-    decoder_output_activation: "relu"
+    decoder_output_activation: "sigmoid"
 
 train:
   lr: 1e-3
   epochs: 100
   batch_size: 128
-  loss: mse
+  reconst_loss: bce
+  latent_loss: None
   num_save_reconst_image: 5
   early_stopping: False
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}

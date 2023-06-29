@@ -98,6 +98,28 @@ def str2transform(
     transforms_name: TransformsName,
     transforms_param: Any,
 ) -> Transforms:
+    """Call torchvision.transforms from string
+
+    Parameters
+    ----------
+    transforms_name : TransformsName
+        Set the name of the transformation method included
+        in torchvision.transforms.\n
+        Settable methods are Grayscale, RandomVerticalFlip,
+        RandomHorizontalFlip, Normalize and ToTensor
+    transforms_param : Any
+        Parameters of transformation method
+
+    Returns
+    -------
+    Transforms
+        `torchvision.transforms.<transforms_name>`
+
+    Raises
+    ------
+    RuntimeError
+        If an undefined transformation method is specified.
+    """
     if transforms_name == "Grayscale":
         return transforms.Grayscale(transforms_param)
     elif transforms_name == "RandomVerticalFlip":
@@ -128,7 +150,7 @@ def display_cfg(cfg: MyConfig | DictConfig) -> None:
     if isinstance(cfg, MyConfig):
         pprint(asdict(cfg))
     elif isinstance(cfg, DictConfig):
-        pprint(OmegaConf.to_yaml(cfg))
+        print(OmegaConf.to_yaml(cfg))
 
 
 class EarlyStopping:

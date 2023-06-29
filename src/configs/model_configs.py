@@ -33,7 +33,8 @@ class TrainConfig:
     lr: float = 1e-3
     epochs: int = 100
     batch_size: int = 64
-    loss: str = "bce"
+    reconst_loss: Literal["bce", "mse"] = "bce"
+    latent_loss: Literal["softplus", "general"] | None = None
     num_save_reconst_image: int = 5
     early_stopping: bool = False
     trained_save_path: str = "./models"

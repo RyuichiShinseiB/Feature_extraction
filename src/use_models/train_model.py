@@ -1,22 +1,21 @@
 # Standard Library
 import os
 from pathlib import Path
-from typing import Any
 
 # Third Party Library
 import hydra
 import matplotlib.pyplot as plt
 import torch
 import torchvision.utils as vutils
-from torch import nn, optim
+from torch import optim
 
 # First Party Library
 from src import Tensor
 from src.configs.model_configs import MyConfig
+from src.loss_function import LossFunction, calc_loss
 from src.predefined_models import model_define
 from src.utilities import (
     EarlyStopping,
-    calc_loss,
     display_cfg,
     get_dataloader,
     weight_init,
@@ -64,13 +63,7 @@ def main(cfg: MyConfig) -> None:
     )
 
     # 損失関数の設定
-    criterion: nn.BCELoss | nn.MSELoss | Any
-    if cfg.train.loss == "bce":
-        criterion = nn.BCELoss()
-    elif cfg.train.loss == "mse":
-        criterion = nn.MSELoss()
-    else:
-        raise RuntimeError("Please select another loss function")
+    criterion = LossFunction(cfg.train.reconst_loss, cfg.train.latent_loss)
 
     # オプティマイザの設定
     optimizer = optim.Adam(model.parameters(), cfg.train.lr)
@@ -94,7 +87,12 @@ def main(cfg: MyConfig) -> None:
             # データをGPUに移動
             x = x.to(device)
             # 損失の計算
-            loss, _ = calc_loss(x, criterion, model)
+            loss, _ = calc_loss(
+                input_data=x,
+                reconst_loss=criterion.reconst,
+                latent_loss=criterion.latent,
+                model=model,
+            )
 
             # 重みの更新
             optimizer.zero_grad()
@@ -109,7 +107,12 @@ def main(cfg: MyConfig) -> None:
         for _i_valid, (x, _) in enumerate(val_dataloader, 0):
             model.eval()
             x = x.to(device)
-            loss, _ = calc_loss(x, criterion, model)
+            loss, _ = calc_loss(
+                input_data=x,
+                reconst_loss=criterion.reconst,
+                latent_loss=criterion.latent,
+                model=model,
+            )
 
             # 損失をリストに保存
             valid_losses.append(loss.cpu().item())
@@ -127,7 +130,7 @@ def main(cfg: MyConfig) -> None:
         # 再構成できているかを確認する画像の保存
         if epoch % save_interval == 0:
             model.eval()
-            _, test_output = calc_loss(test_image, criterion, model)
+            test_output, _ = model(test_image)
             reconst_images.append(
                 vutils.make_grid(test_output, normalize=True)
             )
@@ -141,7 +144,7 @@ def main(cfg: MyConfig) -> None:
     ax = fig.add_subplot(1, 1, 1)
     ax.plot(range(len(train_losses)), train_losses, label="train loss")
     ax.set_xlabel("iterations")
-    ax.set_ylabel(f"{cfg.train.loss.upper()} loss")
+    ax.set_ylabel(f"{cfg.train.reconst_loss.upper()} loss")
     ax.legend()
     if not figure_save_path.exists():
         os.makedirs(figure_save_path)

@@ -3,14 +3,13 @@ from dataclasses import asdict
 from typing import Any
 
 # Third Party Library
-import torch
 from omegaconf import DictConfig, OmegaConf
 
 # First Party Library
 from src.configs.model_configs import ModelConfig
 
 # Local Library
-from .. import Device
+from .. import Device, Model
 from ._SECAE32 import SECAE32
 from ._SECAE64 import SECAE64
 from ._SEConvVAE64 import SECVAE64
@@ -35,18 +34,7 @@ def set_hyper_parameters(
 
 def model_define(
     model_cfg: ModelConfig | DictConfig, device: Device = "cpu"
-) -> (
-    torch.nn.Module
-    # SECAE32
-    # | SECAE64
-    # | SECVAE64
-    # | SECVAE_softplus64
-    # | SimpleCAE32
-    # | SimpleCAE64
-    # | SimpleCAE128
-    # | SimpleCVAE64
-    # | SimpleCVAE_softplus64
-):
+) -> Model:
     model_name = model_cfg.name
     hyper_parameters = set_hyper_parameters(model_cfg)
 

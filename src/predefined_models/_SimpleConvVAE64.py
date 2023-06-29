@@ -47,7 +47,7 @@ class VariationalEncoder(nn.Module):
             encoder_base_channels * 32, latent_dimensions
         )
 
-    def forward(self, x: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         h = self.l1(x)
         h = self.l2(h)
         h = self.l3(h)
@@ -56,13 +56,9 @@ class VariationalEncoder(nn.Module):
         h = self.l6(h)
         h = torch.flatten(h, start_dim=1)
         mean = self.l_mean(h)
-        logvar = self.l_logvar(h)
+        log_var = self.l_logvar(h)
 
-        # reparameterization trick
-        noise = torch.randn_like(logvar, device=self.device)
-        z = mean + logvar.mul(0.5).exp() * noise
-
-        return z, mean, logvar
+        return mean, log_var
 
 
 ######################################################
@@ -142,7 +138,41 @@ class SimpleCVAE64(nn.Module):
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-        z, mean, logvar = self.encoder(x)
-        x_pred = self.decoder(z.view(x.shape[0], self.latent_dimensions, 1, 1))
+        mean, log_var = self.encoder(x)
+        z = self.reparameterization(mean, log_var)
+        x_pred = self.decoder(z)
 
-        return x_pred, z, mean, logvar
+        return x_pred, z, mean, log_var
+
+    def reparameterization(self, mean: Tensor, log_var: Tensor) -> Tensor:
+        eps = torch.randn(mean.shape, device=self.device)
+        return (mean + eps * log_var.mul(0.5).exp()).view(
+            mean.shape[0], self.latent_dimensions, 1, 1
+        )
+
+    def lower_bound(
+        self, x: Tensor, reconst_loss: Tensor
+    ) -> tuple[Tensor, Tensor]:
+        mean, var = self.encoder(x)
+        z = self.reparameterization(mean, var)
+        x_pred = self.decoder(z)
+
+        x = torch.flatten(x, start_dim=1)
+        y = torch.flatten(x_pred, start_dim=1)
+
+        eps = 1e-3
+
+        reconst_loss = -torch.mean(
+            torch.sum(
+                x * torch.log(y + eps) + (1 - x) * torch.log(1 - y + eps),
+                dim=1,
+            )
+        )
+        latent_loss = -0.5 * torch.mean(
+            torch.sum(1 + torch.log(var + eps) - mean**2 - var, dim=1).view(
+                -1
+            )
+        )
+        loss = reconst_loss + latent_loss
+
+        return loss, x_pred

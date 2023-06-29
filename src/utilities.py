@@ -1,21 +1,21 @@
 # Standard Library
+from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Callable, Literal, Optional, TypeAlias
+from pprint import pprint
+from typing import Any, Callable, Optional
 
 # Third Party Library
 import numpy as np
 import torch
+from omegaconf import DictConfig, OmegaConf
 from torch import nn
 from torch.utils.data import DataLoader, random_split
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms
 
-# First Party Library
-from src import Transforms, TransformsName, TransformsNameValue
-
-Model: TypeAlias = nn.Module
-Tensor: TypeAlias = torch.Tensor
-Device: TypeAlias = Literal["cpu", "cuda"] | torch.device
+# Local Library
+from . import Model, Tensor, Transforms, TransformsName, TransformsNameValue
+from .configs.model_configs import MyConfig
 
 
 def weight_init(m: Any) -> None:
@@ -34,11 +34,12 @@ def weight_init(m: Any) -> None:
     """
     if isinstance(m, nn.Linear):
         torch.nn.init.kaiming_normal_(m.weight)
-        m.bias.data.fill_(0.0)
+        if m.bias is not None:
+            torch.nn.init.zeros_(m.bias.data)
     elif isinstance(m, nn.Conv2d):
         torch.nn.init.kaiming_normal_(m.weight)
-    elif isinstance(m, nn.BatchNorm2d):
-        torch.nn.init.kaiming_normal_(m.weight)
+        if m.bias is not None:
+            torch.nn.init.zeros_(m.bias.data)
 
 
 def get_dataloader(
@@ -67,7 +68,6 @@ def get_dataloader(
     Returns
     -------
     DataLoader
-        _description_
     """
     transform = transforms.Compose(
         [
@@ -124,6 +124,13 @@ def calc_loss(
     return loss, x_pred
 
 
+def display_cfg(cfg: MyConfig | DictConfig) -> None:
+    if isinstance(cfg, MyConfig):
+        pprint(asdict(cfg))
+    elif isinstance(cfg, DictConfig):
+        pprint(OmegaConf.to_yaml(cfg))
+
+
 class EarlyStopping:
     def __init__(self, patience: int = 7, verbose: bool = False) -> None:
         self.patience = patience
@@ -172,3 +179,8 @@ class EarlyStopping:
         save_path = "./model/model.pth" if save_path is None else save_path
         torch.save(model.state_dict(), save_path)
         self.val_loss_min = val_loss
+
+
+if __name__ == "__main__":
+    model = nn.Sequential(nn.BatchNorm2d(3))
+    model.apply(weight_init)

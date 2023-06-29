@@ -14,10 +14,10 @@ train:
   lr: 1e-3
   epochs: 100
   batch_size: 128
-  loss: bce
+  loss: mse
   num_save_reconst_image: 5
   early_stopping: False
-  trained_save_path: /${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
 
 dataset:
   image_target: CNTForest
@@ -30,4 +30,4 @@ dataset:
 
 hydra:
   run:
-    dir: ./model/${train.trained_save_path}
+    dir: ./models/${train.trained_save_path}

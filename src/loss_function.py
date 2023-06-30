@@ -14,10 +14,10 @@ def calc_loss(
     latent_loss: Callable[[Tensor, Tensor], Tensor] | None,
     model: Model,
 ) -> tuple[Tensor, Tensor]:
-    x_pred, _ = model(input_data)
+    x_pred, _latent = model(input_data)
     loss = reconst_loss(x_pred, input_data)
-    if latent_loss:
-        loss += latent_loss
+    if latent_loss is not None:
+        loss += latent_loss(_latent[-2], _latent[-1])
     return loss, x_pred
 
 
@@ -37,7 +37,7 @@ class LossFunction:
         else:
             raise RuntimeError("Please select another loss function")
 
-        if var_calc_type:
+        if var_calc_type is not None:
             self.latent = LatentLoss(var_calc_type)
         else:
             self.latent = None
@@ -49,7 +49,8 @@ class LatentLoss:
             self.latent_loss = self.softplus_latent
         elif var_calc_type == "standard":
             self.latent_loss = self.general_latent
-        pass
+        else:
+            raise RuntimeError("'softplus' or 'general' can be selected.")
 
     def __call__(self, mean: Tensor, var: Tensor) -> Tensor:
         return self.latent_loss(mean, var)

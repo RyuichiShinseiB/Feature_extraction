@@ -218,7 +218,7 @@ class SECVAE64(nn.Module):
             encoder_output_activation,
             device,
         )
-        self.decoder = VariationalDecoder(
+        self.decoder = VariationalSEDecoder(
             latent_dimensions,
             decoder_base_channels,
             input_channels,
@@ -227,8 +227,10 @@ class SECVAE64(nn.Module):
             device,
         )
 
-    def forward(self, x: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    def forward(
+        self, x: Tensor
+    ) -> tuple[Tensor, tuple[Tensor, Tensor, Tensor]]:
         z, mean, logvar = self.encoder(x)
         x_pred = self.decoder(z.view(x.shape[0], self.latent_dimensions, 1, 1))
 
-        return x_pred, z, mean, logvar
+        return x_pred, (z, mean, logvar)

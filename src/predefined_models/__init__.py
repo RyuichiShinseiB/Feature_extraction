@@ -27,7 +27,7 @@ def set_hyper_parameters(
     if isinstance(model_cfg, ModelConfig):
         return asdict(model_cfg.hyper_parameters)
     elif isinstance(model_cfg, DictConfig):
-        return OmegaConf.to_object(model_cfg.hyper_parameters)
+        return OmegaConf.to_container(model_cfg.hyper_parameters)
     else:
         raise ValueError("model_cfg is not ModelConfig or DictConfig")
 

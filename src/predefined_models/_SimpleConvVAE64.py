@@ -137,42 +137,17 @@ class SimpleCVAE64(nn.Module):
             device,
         )
 
-    def forward(self, x: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    def forward(
+        self, x: Tensor
+    ) -> tuple[Tensor, tuple[Tensor, Tensor, Tensor]]:
         mean, log_var = self.encoder(x)
         z = self.reparameterization(mean, log_var)
         x_pred = self.decoder(z)
 
-        return x_pred, z, mean, log_var
+        return x_pred, (z, mean, log_var)
 
     def reparameterization(self, mean: Tensor, log_var: Tensor) -> Tensor:
         eps = torch.randn(mean.shape, device=self.device)
         return (mean + eps * log_var.mul(0.5).exp()).view(
             mean.shape[0], self.latent_dimensions, 1, 1
         )
-
-    def lower_bound(
-        self, x: Tensor, reconst_loss: Tensor
-    ) -> tuple[Tensor, Tensor]:
-        mean, var = self.encoder(x)
-        z = self.reparameterization(mean, var)
-        x_pred = self.decoder(z)
-
-        x = torch.flatten(x, start_dim=1)
-        y = torch.flatten(x_pred, start_dim=1)
-
-        eps = 1e-3
-
-        reconst_loss = -torch.mean(
-            torch.sum(
-                x * torch.log(y + eps) + (1 - x) * torch.log(1 - y + eps),
-                dim=1,
-            )
-        )
-        latent_loss = -0.5 * torch.mean(
-            torch.sum(1 + torch.log(var + eps) - mean**2 - var, dim=1).view(
-                -1
-            )
-        )
-        loss = reconst_loss + latent_loss
-
-        return loss, x_pred

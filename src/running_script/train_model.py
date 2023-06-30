@@ -29,24 +29,31 @@ def main(cfg: MyConfig) -> None:
     # Display Configuration
     display_cfg(cfg)
 
-    # 訓練済みモデル、訓練途中の再構成画像のパス
+    # 訓練済みモデル、訓練途中の再構成画像の保存先
+    # Paths to store trained models and reconstructed images in training
     base_save_path = Path(cfg.train.trained_save_path)
     model_save_path = Path("./models") / base_save_path
     figure_save_path = Path("./reports/figures") / base_save_path
 
     # 再構成画像を保存する間隔
+    # Storage interval of reconstructed images
     save_interval = cfg.train.epochs // cfg.train.num_save_reconst_image
 
-    # CPUで計算するかGPUで計算するかを取得
+    # GPUが使える環境であればCPUでなくGPUを使うようにする設定
+    # Use GPU instead of CPU if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # モデルの選択とハイパラの設定
+    # Model selection and hyperparameter configuration from configs.yaml
     model = model_define(cfg.model, device=device).to(device)
+
     # 重みの初期化
+    # Weight initialization
     model.apply(weight_init)
 
     # Early stoppingの宣言
     # 過学習を防ぐためにepochの途中で終了する
+    # Declaration of Early stopping
     early_stopping = EarlyStopping()
 
     # データローダーを設定
@@ -155,6 +162,11 @@ def main(cfg: MyConfig) -> None:
             reconst_image,
             fp=figure_save_path / f"reconst_images{i*save_interval:03}.png",
         )
+
+    vutils.save_image(
+        vutils.make_grid(test_image, normalize=True),
+        fp=figure_save_path / "test_images.png",
+    )
 
     torch.save(model.state_dict(), model_save_path / "model_parameters.pth")
 

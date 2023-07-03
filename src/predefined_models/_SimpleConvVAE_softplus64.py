@@ -4,7 +4,7 @@ from torch import nn
 
 # Local Library
 from .. import ActivationName, Device, Tensor
-from ._modules import DownShape, UpShape, add_activation
+from ._CNN_modules import DownShape, UpShape, add_activation
 
 
 class VariationalEncoder(nn.Module):

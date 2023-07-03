@@ -3,7 +3,7 @@ from torch import nn
 
 # Local Library
 from .. import ActivationName, Device, Tensor
-from ._modules import DownShape, SELayer, UpShape
+from ._CNN_modules import DownShape, SELayer, UpShape
 
 
 class Encoder(nn.Module):

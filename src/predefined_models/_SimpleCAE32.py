@@ -6,7 +6,7 @@ from torch import nn
 
 # Local Library
 from .. import ActivationName, Device, Tensor
-from ._modules import add_activation
+from ._CNN_modules import add_activation
 
 
 class Encoder(nn.Module):

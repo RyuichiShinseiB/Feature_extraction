@@ -74,6 +74,7 @@
         "savefig",
         "SECAE",
         "SECVAE",
+        "selfattention",
         "softmax",
         "softplus",
         "torchinfo",

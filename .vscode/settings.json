@@ -52,6 +52,7 @@
     "autoDocstring.docstringFormat": "numpy",
     "cSpell.words": [
         "arange",
+        "argmax",
         "autoencoder",
         "cuda",
         "CVAE",
@@ -80,8 +81,10 @@
         "softplus",
         "torchinfo",
         "torchvision",
+        "trainval",
         "unsqueeze",
         "vutils",
+        "workdir",
         "xlabel",
         "ylabel"
     ],

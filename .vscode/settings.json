@@ -52,6 +52,7 @@
     "autoDocstring.docstringFormat": "numpy",
     "cSpell.words": [
         "arange",
+        "autoencoder",
         "cuda",
         "CVAE",
         "dtype",

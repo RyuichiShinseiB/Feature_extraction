@@ -72,6 +72,9 @@ class MAEencoder(nn.Module):
         # Layer Normalization
         self.ln = nn.LayerNorm(emb_dim)
 
+        # Parameter initialization
+        self.initialize_weight()
+
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         """forward propagation
 
@@ -99,6 +102,10 @@ class MAEencoder(nn.Module):
         patches, _, backward_indexes = self.shuffle(patches)
         features = self.ln(self.transformer(patches))
         return features, backward_indexes
+
+    def initialize_weight(self) -> None:
+        nn.init.kaiming_normal_(self.cls_token)
+        nn.init.kaiming_normal_(self.pos_emb)
 
 
 class MAEdecoder(nn.Module):
@@ -157,6 +164,9 @@ class MAEdecoder(nn.Module):
         self.reconstruction = nn.Linear(
             emb_dim, input_channels * image_size**2
         )
+
+        # Parameter initialization
+        self.initialize_weight()
 
     def forward(
         self, features: Tensor, backward_indexes: Tensor
@@ -227,6 +237,10 @@ class MAEdecoder(nn.Module):
         )
 
         return img, mask
+
+    def initialize_weight(self) -> None:
+        nn.init.kaiming_normal_(self.mask_token)
+        nn.init.kaiming_normal_(self.pos_emb)
 
 
 class MAEViT(nn.Module):
@@ -299,6 +313,10 @@ class MAEViT(nn.Module):
 
     def get_last_selfattention(self, x: Tensor) -> Tensor:
         patches = self.encoder.patch_emb(x)
+        patches = torch.cat(
+            [self.encoder.cls_token.repeat(patches.shape[0], 1, 1), patches],
+            dim=1,
+        )
         patches += self.encoder.pos_emb
 
         patches = torch.cat(
@@ -329,7 +347,5 @@ if __name__ == "__main__":
         "dropout": 0,
     }
     mae = MAEViT(**mae_config).to("cuda")
-    # Third Party Library
-    from torchinfo import summary
-
-    summary(mae, (512, 3, 32, 32))
+    x = torch.randn((1, 3, 32, 32), device="cuda")
+    attn = mae.get_last_selfattention(x)

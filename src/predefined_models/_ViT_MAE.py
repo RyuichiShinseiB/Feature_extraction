@@ -162,7 +162,7 @@ class MAEdecoder(nn.Module):
         )
 
         self.reconstruction = nn.Linear(
-            emb_dim, input_channels * image_size**2
+            emb_dim, input_channels * (image_size // num_patch_row) ** 2
         )
 
         # Parameter initialization
@@ -348,4 +348,7 @@ if __name__ == "__main__":
     }
     mae = MAEViT(**mae_config).to("cuda")
     x = torch.randn((1, 3, 32, 32), device="cuda")
-    attn = mae.get_last_selfattention(x)
+    # Third Party Library
+    from torchinfo import summary
+
+    summary(mae, (1, 3, 32, 32))

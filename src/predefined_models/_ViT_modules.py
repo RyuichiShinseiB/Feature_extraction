@@ -121,12 +121,15 @@ class FFN(nn.Module):
         Parameters
         ----------
         x : Tensor
-            input to FFN
+            input from MHSA to FFN.
+            Shape is (B, N, D)
+            B: Batch size, N: Number of tokens, D: Length of embedded vector
 
         Returns
         -------
         out : Tensor
-            output of FFN
+            output from FFN.
+            Shape is (B, N, D)
         """
         out: Tensor = self.net(x)
         return out
@@ -159,7 +162,7 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(emb_dim)
         self.ffn = FFN(emb_dim, hidden_dim, dropout)
 
-    def forward(self, z: Tensor, return_attn: bool = False) -> Tensor:
+    def forward(self, z: Tensor) -> Tensor:
         """Forward propagation
 
         Parameters
@@ -174,26 +177,69 @@ class Block(nn.Module):
             output to next basic Transformer block or MLP head.
             shape = (B, N, D)
         """
-        out, attn = self.mhsa(self.ln1(z))
-        if return_attn:
-            return torch.Tensor(attn)
-        else:
-            out += z
-            out = self.ffn(self.ln2(out)) + out
-            return torch.Tensor(out)
+        out, _ = self.mhsa(self.ln1(z))
+        out += z
+        out = self.ffn(self.ln2(out)) + out
+        return torch.Tensor(out)
+
+    def get_attn(self, z: Tensor) -> Tensor:
+        """Get attention map from Multi-Heads Self-Attention
+
+        Parameters
+        ----------
+        z : Tensor
+            Patches. Shape is (B, N, D)
+
+        Returns
+        -------
+        attn: Tensor
+            Self attention from MHSA. Shape is (B, N, N)
+        """
+        _, attn = self.mhsa(self.ln1(z))
+        return torch.Tensor(attn)
 
 
 class PatchShuffle(nn.Module):
     def __init__(self, ratio: float) -> None:
+        """Patches shuffling and some patches masking
+
+        Parameters
+        ----------
+        ratio : float
+            Ratio of patches to be masked.
+        """
         super().__init__()
         self.ratio = ratio
 
-    def forward(self, patches: Tensor) -> tuple[Tensor, tuple[Tensor, Tensor]]:
+    def forward(self, patches: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+        """Perform shuffling and masking of patches
+
+        Parameters
+        ----------
+        patches : Tensor
+            Patches of image. Shape is (B, N, D)
+            B: batch size, N: number of tokens, D: length of embedded vector
+
+        Returns
+        -------
+        patches : Tensor
+            Perform shuffling and masking of patches.
+            Shape is (B, n, D).
+            B: batch size, n: number of remaining unmasked tokens,
+            D: length of embedded vector
+            n = int(N * (1 - mask_ratio))
+        forward_indexes : Tensor
+            Indexes for shuffling the original patches.
+            Shape is (B, N)
+        backward_indexes : Tensor
+            Indexes for restoring to the original patches.
+            Shape is (B, N)
+        """
         batch_size, num_patch, _ = patches.shape
         remain_patches = int(num_patch * (1 - self.ratio))
 
         indexes: list[tuple[Tensor, Tensor]] = [
-            self.random_indexes(num_patch) for _ in range(batch_size)
+            self.patch_random_indexes(num_patch) for _ in range(batch_size)
         ]
         forward_indexes = torch.vstack([idx[0] for idx in indexes]).to(
             dtype=torch.long, device=patches.device
@@ -204,10 +250,10 @@ class PatchShuffle(nn.Module):
 
         patches = self.take_indexes(patches, forward_indexes)
         patches = patches[:, :remain_patches, :]
-        return patches, (forward_indexes, backward_indexes)
+        return patches, forward_indexes, backward_indexes
 
     @staticmethod
-    def random_indexes(num_patch: int) -> tuple[Tensor, Tensor]:
+    def patch_random_indexes(num_patch: int) -> tuple[Tensor, Tensor]:
         """Function to generate indexes for random sorting of patches
 
         Parameters
@@ -217,11 +263,16 @@ class PatchShuffle(nn.Module):
 
         Returns
         -------
-        tuple[Tensor, Tensor]
-            The first is indexes of randomly arranged patches.
-            The second is indexes for restoring the indexes
+        forward_indexes: Tensor
+            Indexes of randomly arranged patches.
+            The first element is 0, which is the index of the cls_token
+            and the elements after it are the indexes of the patches.
+        backward_indexes: Tensor
+            Indexes for restoring the indexes.
+            Same as forward_indexes for the first element.
         """
-        forward_indexes = torch.randperm(num_patch)
+        _forward_indexes = torch.randperm(num_patch - 1)
+        forward_indexes = torch.cat([torch.zeros(1), _forward_indexes + 1])
         backward_indexes = torch.argsort(forward_indexes)
         return forward_indexes, backward_indexes
 
@@ -250,6 +301,43 @@ class PatchShuffle(nn.Module):
         )
 
 
+class PatchEmbeddingWithShuffle(nn.Module):
+    def __init__(
+        self,
+        input_channels: int = 3,
+        emb_dim: int = 384,
+        num_patch_row: int = 2,
+        image_size: int = 32,
+        mask_ratio: float = 0.75,
+    ) -> None:
+        super(PatchEmbeddingWithShuffle, self).__init__()
+        self.input_channels = input_channels
+        self.emb_dim = emb_dim
+        self.num_patch_row = num_patch_row
+        self.image_size = image_size
+
+        self.num_patch = self.num_patch_row**2
+        self.patch_size = int(self.image_size // self.num_patch_row)
+
+        self.patch_emb_layer = nn.Conv2d(
+            in_channels=self.input_channels,
+            out_channels=self.emb_dim,
+            kernel_size=self.patch_size,
+            stride=self.patch_size,
+        )
+        self.shuffle = PatchShuffle(mask_ratio)
+
+    def forward(self, x: Tensor) -> tuple[Tensor, tuple[Tensor, Tensor]]:
+        # (B, C, H, W) -> (B, D, H/P, W/P)
+        z_0: Tensor = self.patch_emb_layer(x)
+
+        # (B, D, H/P, W/P) -> (B, D, H*W/P^2) -> (B, H*W/P^2, D)
+        z_0 = z_0.flatten(2).transpose(1, 2)
+
+        z_0, indexes = self.shuffle(z_0)
+        return z_0, indexes
+
+
 class PatchEmbedding(nn.Module):
     def __init__(
         self,
@@ -257,7 +345,6 @@ class PatchEmbedding(nn.Module):
         emb_dim: int = 384,
         num_patch_row: int = 2,
         image_size: int = 32,
-        mask_ratio: float | None = None,
     ) -> None:
         super(PatchEmbedding, self).__init__()
         self.input_channels = input_channels
@@ -275,27 +362,14 @@ class PatchEmbedding(nn.Module):
             stride=self.patch_size,
         )
 
-        self.shuffle: None | PatchShuffle
-        if mask_ratio is None:
-            self.shuffle = None
-        else:
-            self.shuffle = PatchShuffle(mask_ratio)
-
-    def forward(
-        self, x: Tensor
-    ) -> Tensor | tuple[Tensor, tuple[Tensor, Tensor]]:
+    def forward(self, x: Tensor) -> Tensor:
         # (B, C, H, W) -> (B, D, H/P, W/P)
         z_0: Tensor = self.patch_emb_layer(x)
 
         # (B, D, H/P, W/P) -> (B, D, H*W/P^2) -> (B, H*W/P^2, D)
         z_0 = z_0.flatten(2).transpose(1, 2)
 
-        if self.shuffle is None:
-            return z_0
-        else:
-            z_0, indexes = self.shuffle(z_0)
-            print(z_0.shape)
-            return z_0, indexes
+        return z_0
 
 
 class PosEmbedding(nn.Module):
@@ -323,3 +397,10 @@ class PosEmbedding(nn.Module):
         z_0 += self.pos_emb
 
         return z_0
+
+
+if __name__ == "__main__":
+    num_patch = 5
+    f, b = PatchShuffle.patch_random_indexes(num_patch - 1)
+    print("f=", f)
+    print("b=", b)

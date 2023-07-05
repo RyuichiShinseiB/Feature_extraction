@@ -1,0 +1,10 @@
+name: SimpleCAE64
+hyper_parameters:
+  input_channels: 1
+  latent_dimensions: 128
+  encoder_base_channels: 64
+  decoder_base_channels: 64
+  encoder_activation: "leakyrelu"
+  decoder_activation: "leakyrelu"
+  encoder_output_activation: "leakyrelu"
+  decoder_output_activation: "relu"

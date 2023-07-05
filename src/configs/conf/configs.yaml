@@ -1,5 +1,5 @@
 model:
-  name: SimpleCAE64
+  name: SimpleCAE32
   hyper_parameters:
     input_channels: 1
     latent_dimensions: 128
@@ -22,7 +22,7 @@ train:
 
 dataset:
   image_target: CNTForest
-  path: ./data/processed/CNTForest/cnt_sem_64x64/10k
+  path: ./data/processed/CNTForest/cnt_sem_32x32/10k
   transform:
     Grayscale: 1
     RandomVerticalFlip: 0.5

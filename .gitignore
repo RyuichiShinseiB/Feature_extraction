@@ -25,8 +25,7 @@ var/
 pytorch_whl
 models/*
 reports/
-tmp/data/*
-tmp/MYmodel/*
+tmp
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

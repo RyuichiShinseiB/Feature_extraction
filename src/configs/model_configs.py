@@ -1,13 +1,15 @@
 # Standard Library
-from dataclasses import dataclass, field
-from typing import Any, Literal
+from dataclasses import asdict, dataclass, field
+from typing import Any, Literal, Type, TypeVar
 
 # Third Party Library
 import hydra
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
-# Local Library
-from .. import ActivationName, ModelName, TransformsNameValue
+# First Party Library
+from src import ActivationName, ModelName, TransformsNameValue
+
+DataclassConfig = TypeVar("DataclassConfig")
 
 
 @dataclass
@@ -55,14 +57,22 @@ class MyConfig:
     hydra: Any | None = None
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="configs")
-def main(cfg: MyConfig) -> None:
+def dictconfig2dataclass(
+    cfg: DictConfig, dataclass_cfg_cls: Type[DataclassConfig]
+) -> DataclassConfig:
+    dictconfig = OmegaConf.to_container(cfg, resolve=True)
+    config = dataclass_cfg_cls(**dictconfig)
+    return config
+
+
+@hydra.main(version_base=None, config_path="train_conf", config_name="configs")
+def main(cfg: DictConfig) -> None:
+    print(f"{type(cfg)=}")
     print(OmegaConf.to_yaml(cfg))
+    dataclass_cfg = dictconfig2dataclass(cfg, MyConfig)
+    print(type(dataclass_cfg))
+    print(asdict(dataclass_cfg))
 
 
 if __name__ == "__main__":
-    # Standard Library
-    from dataclasses import asdict
-    from pprint import pprint
-
-    pprint(asdict(MyConfig()))
+    main()

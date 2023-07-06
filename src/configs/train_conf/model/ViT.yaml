@@ -1,0 +1,14 @@
+name: MAEViT
+hyper_parameters:
+  input_channels: 3
+  emb_dim: 192
+  num_patch_row: 2
+  image_size: 32
+  encoder_num_blocks: 12
+  decoder_num_blocks: 4
+  encoder_heads: 3
+  decoder_heads: 3
+  encoder_hidden_dim: 768
+  decoder_hidden_dim: 768
+  mask_ratio: 0.75
+  dropout: 0

@@ -7,11 +7,12 @@ import hydra
 import matplotlib.pyplot as plt
 import torch
 import torchvision.utils as vutils
+from omegaconf import DictConfig
 from torch import optim
 
 # First Party Library
 from src import Tensor
-from src.configs.model_configs import MyConfig
+from src.configs.model_configs import MyConfig, dictconfig2dataclass
 from src.loss_function import LossFunction, calc_loss
 from src.predefined_models import model_define
 from src.utilities import (
@@ -23,11 +24,15 @@ from src.utilities import (
 
 
 @hydra.main(
-    version_base=None, config_path="../configs/conf", config_name="configs"
+    version_base=None,
+    config_path="../configs/train_conf",
+    config_name="configs",
 )
-def main(cfg: MyConfig) -> None:
+def main(_cfg: DictConfig) -> None:
     # Display Configuration
-    display_cfg(cfg)
+    display_cfg(_cfg)
+    cfg = dictconfig2dataclass(_cfg, MyConfig)
+    del _cfg
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先
     # Paths to store trained models and reconstructed images in training

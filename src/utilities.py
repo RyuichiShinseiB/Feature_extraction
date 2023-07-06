@@ -198,7 +198,11 @@ class EarlyStopping:
                 f"({self.val_loss_min:.3f} --> {val_loss:.3f}). \n",
                 "Saving model ...",
             )
-        save_path = "./model/model.pth" if save_path is None else save_path
+        save_path = (
+            "./model/model_parameters_EA.pth"
+            if save_path is None
+            else save_path
+        )
         torch.save(model.state_dict(), save_path)
         self.val_loss_min = val_loss
 

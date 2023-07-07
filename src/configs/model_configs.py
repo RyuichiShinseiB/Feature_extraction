@@ -51,7 +51,7 @@ class ModelConfig:
 
 
 @dataclass
-class TrainConfig:
+class TrainHyperParameterConfig:
     lr: float = 1e-3
     epochs: int = 100
     batch_size: int = 64
@@ -63,22 +63,44 @@ class TrainConfig:
 
 
 @dataclass
-class DatasetConfig:
+class TrainDatasetConfig:
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
     path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
     transform: TransformsNameValue = field(default_factory=dict)
 
 
 @dataclass
+class ExtractDatasetConfig:
+    image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
+    train_path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
+    check_path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
+    transform: TransformsNameValue = field(default_factory=dict)
+
+
+@dataclass
+class TrainConfig:
+    model: ModelConfig = ModelConfig()
+    train_hyperparameter: TrainHyperParameterConfig = (
+        TrainHyperParameterConfig()
+    )
+    dataset: TrainDatasetConfig = TrainDatasetConfig()
+
+
+@dataclass
+class ExtractConfig:
+    model: ModelConfig = ModelConfig()
+    train_hyperparameter: TrainHyperParameterConfig = (
+        TrainHyperParameterConfig()
+    )
+    dataset: ExtractDatasetConfig = ExtractDatasetConfig()
+    feature_save_path: str = "${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}"
+
+
+@dataclass
 class MyConfig:
     model: ModelConfig = ModelConfig()
-    train: TrainConfig = TrainConfig()
-    dataset: DatasetConfig = DatasetConfig()
-
-
-RecursiveSubDataclass: TypeAlias = (
-    MyConfig | DatasetConfig | TrainConfig | ModelConfig | HyperParameterConfig
-)
+    train: TrainHyperParameterConfig = TrainHyperParameterConfig()
+    train_dataset: TrainDatasetConfig = TrainDatasetConfig()
 
 
 def dict2dataclass(cls: Type[Dataclass], src: dict) -> Dataclass:
@@ -134,7 +156,7 @@ if __name__ == "__main__":
                 "decoder_output_activation": "relu",
             },
         },
-        "train": {
+        "train_hyperparameter": {
             "lr": 0.001,
             "epochs": 100,
             "batch_size": 128,
@@ -156,5 +178,42 @@ if __name__ == "__main__":
         },
     }
 
-    a = dict2dataclass(MyConfig, d)
+    d2 = {
+        "model": {
+            "name": "SimpleCAE32",
+            "hyper_parameters": {
+                "input_channels": 1,
+                "latent_dimensions": 128,
+                "encoder_base_channels": 64,
+                "decoder_base_channels": 64,
+                "encoder_activation": "selu",
+                "decoder_activation": "selu",
+                "encoder_output_activation": "selu",
+                "decoder_output_activation": "sigmoid",
+            },
+        },
+        "train_hyperparameter": {
+            "lr": 0.001,
+            "epochs": 100,
+            "batch_size": 128,
+            "reconst_loss": "mse",
+            "latent_loss": None,
+            "num_save_reconst_image": 5,
+            "early_stopping": False,
+            "trained_save_path": "${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}",
+        },
+        "dataset": {
+            "image_target": "CNTForest",
+            "train_path": "data/processed/CNTForest/cnt_sem_32x32/10k",
+            "check_path": "data/processed/check/CNTForest/cnt_sem_for_check_32x32/10k",
+            "transform": {
+                "Grayscale": 1,
+                "RandomVerticalFlip": 0.5,
+                "RandomHorizontalFlip": 0.5,
+                "ToTensor": 0,
+            },
+        },
+    }
+
+    a = dict2dataclass(ExtractConfig, d2)
     pprint(a)

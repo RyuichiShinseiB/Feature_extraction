@@ -5,30 +5,36 @@ model:
     latent_dimensions: 128
     encoder_base_channels: 64
     decoder_base_channels: 64
-    encoder_activation: "leakyrelu"
-    decoder_activation: "leakyrelu"
-    encoder_output_activation: "leakyrelu"
-    decoder_output_activation: "relu"
+    encoder_activation: "selu"
+    decoder_activation: "selu"
+    encoder_output_activation: "selu"
+    decoder_output_activation: "sigmoid"
 
-train:
+train_hyperparameter:
   lr: 1e-3
   epochs: 100
   batch_size: 128
-  reconst_loss: mse
+  reconst_loss: bce
   latent_loss: null
   num_save_reconst_image: 5
   early_stopping: False
-  trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  trained_save_path: SimpleCAE32/2023-07-07/17-55-55/
 
 dataset:
   image_target: CNTForest
-  path: data/processed/check/CNTForest/cnt_sem_for_check_32x32/10k
+  train_path: data/processed/CNTForest/cnt_sem_32x32/10k
+  check_path: data/processed/check/CNTForest/cnt_sem_for_check_32x32/10k
   transform:
     Grayscale: 1
     RandomVerticalFlip: 0.5
     RandomHorizontalFlip: 0.5
     ToTensor: 0
 
+feature_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+
+
+
 hydra:
   run:
-    dir: ./reports/features/${train.trained_save_path}
+    dir: ./reports/features/${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}

@@ -5,16 +5,16 @@ model:
     latent_dimensions: 128
     encoder_base_channels: 64
     decoder_base_channels: 64
-    encoder_activation: "leakyrelu"
-    decoder_activation: "leakyrelu"
-    encoder_output_activation: "leakyrelu"
-    decoder_output_activation: "relu"
+    encoder_activation: "selu"
+    decoder_activation: "selu"
+    encoder_output_activation: "selu"
+    decoder_output_activation: "sigmoid"
 
-train:
+train_hyperparameter:
   lr: 1e-3
   epochs: 100
   batch_size: 128
-  reconst_loss: mse
+  reconst_loss: bce
   latent_loss: null
   num_save_reconst_image: 5
   early_stopping: False

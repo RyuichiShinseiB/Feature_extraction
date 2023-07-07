@@ -2,20 +2,33 @@
 from dataclasses import asdict
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, cast
 
 # Third Party Library
 import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from torch import nn
-from torch.utils.data import DataLoader, random_split
-from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader, Subset, random_split
+from torchvision.datasets import ImageFolder, VisionDataset
+from torchvision.datasets.folder import find_classes, make_dataset, pil_loader
 from torchvision.transforms import transforms
 
 # Local Library
 from . import Model, Tensor, Transforms, TransformsName, TransformsNameValue
 from .configs.model_configs import MyConfig
+
+IMG_EXTENSIONS = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".ppm",
+    ".bmp",
+    ".pgm",
+    ".tif",
+    ".tiff",
+    ".webp",
+)
 
 
 def weight_init(m: Any) -> None:
@@ -49,6 +62,7 @@ def get_dataloader(
     shuffle: bool = True,
     split_ratio: tuple[float, float] | None = None,
     generator_seed: int | None = 42,
+    extraction: bool = False,
 ) -> tuple[DataLoader, DataLoader] | DataLoader:
     """specifying parameters and output dataloader
 
@@ -75,11 +89,15 @@ def get_dataloader(
             for name, value in dataset_transform.items()
         ]
     )
-
-    dataset = ImageFolder(dataset_path, transform)
+    if extraction:
+        dataset = ForExtractFolder(dataset_path, transform=transform)
+    else:
+        dataset = ImageFolder(dataset_path, transform)
 
     if split_ratio is not None:
-        train_dataset, val_dataset = random_split(
+        splitted_dataset: list[
+            Subset[ForExtractFolder | ImageFolder]
+        ] = random_split(
             dataset,
             split_ratio,
             generator=torch.Generator().manual_seed(generator_seed)
@@ -87,8 +105,12 @@ def get_dataloader(
             else None,
         )
         return (
-            DataLoader(train_dataset, batch_size, shuffle, num_workers=2),
-            DataLoader(val_dataset, batch_size, shuffle, num_workers=2),
+            DataLoader(
+                splitted_dataset[0], batch_size, shuffle, num_workers=2
+            ),
+            DataLoader(
+                splitted_dataset[1], batch_size, shuffle, num_workers=2
+            ),
         )
     else:
         return DataLoader(dataset, batch_size, shuffle, num_workers=2)
@@ -151,6 +173,71 @@ def display_cfg(cfg: MyConfig | DictConfig) -> None:
         pprint(asdict(cfg))
     elif isinstance(cfg, DictConfig):
         print(OmegaConf.to_yaml(cfg))
+
+
+class ForExtractFolder(VisionDataset):
+    def __init__(
+        self,
+        root: str | Path,
+        extensions: tuple[str, ...] | None = IMG_EXTENSIONS,
+        transform: Callable | None = None,
+        target_transform: Callable | None = None,
+        loader: Callable[[str], Any] = pil_loader,
+        is_valid_file: Callable[[str], bool] | None = None,
+    ) -> None:
+        super().__init__(
+            root, transform=transform, target_transform=target_transform
+        )
+        classes, class_to_idx = self.find_classes(self.root)
+        samples = self.make_dataset(
+            self.root, class_to_idx, extensions, is_valid_file
+        )
+
+        self.loader = loader
+        self.extensions = extensions
+        self.classes = classes
+        self.class_to_idx = class_to_idx
+        self.samples = samples
+        self.targets = [s[1] for s in samples]
+
+    @staticmethod
+    def make_dataset(
+        directory: str,
+        class_to_idx: dict[str, int],
+        extensions: tuple[str, ...] | None = None,
+        is_valid_file: Callable[[str], bool] | None = None,
+    ) -> list[tuple[str, int]]:
+        if class_to_idx is None:
+            raise ValueError("The class_to_idx parameter cannot be None.")
+        else:
+            made_dataset = make_dataset(
+                directory, class_to_idx, extensions, is_valid_file
+            )
+            return cast(list[tuple[str, int]], made_dataset)
+
+    def find_classes(self, directory: str) -> tuple[list[str], dict[str, int]]:
+        found_classes = find_classes(directory)
+        return cast(tuple[list[str], dict[str, int]], found_classes)
+
+    def __getitem__(self, index: int) -> tuple[Any, Any, str, str]:
+        (
+            path,
+            target,
+        ) = self.samples[index]
+
+        fname = path.split("/")[-1]
+        dirname = path.split("/")[-2]
+
+        sample = self.loader(path)
+        if self.transform is not None:
+            sample = self.transform(sample)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return sample, target, dirname, fname
+
+    def __len__(self) -> int:
+        return len(self.samples)
 
 
 class EarlyStopping:

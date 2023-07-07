@@ -2,7 +2,7 @@
 from dataclasses import asdict
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable, Optional, cast
+from typing import Any, Callable, Optional, TypeAlias, cast
 
 # Third Party Library
 import numpy as np
@@ -15,7 +15,14 @@ from torchvision.datasets.folder import find_classes, make_dataset, pil_loader
 from torchvision.transforms import transforms
 
 # Local Library
-from . import Model, Tensor, Transforms, TransformsName, TransformsNameValue
+from . import (
+    Device,
+    Model,
+    Tensor,
+    Transforms,
+    TransformsName,
+    TransformsNameValue,
+)
 from .configs.model_configs import MyConfig
 
 IMG_EXTENSIONS = (
@@ -29,6 +36,9 @@ IMG_EXTENSIONS = (
     ".tiff",
     ".webp",
 )
+FeatureArray: TypeAlias = np.ndarray
+DirList: TypeAlias = list[str]
+FileNameList: TypeAlias = list[str]
 
 
 def weight_init(m: Any) -> None:
@@ -175,6 +185,26 @@ def display_cfg(cfg: MyConfig | DictConfig) -> None:
         print(OmegaConf.to_yaml(cfg))
 
 
+def extract_features(
+    model: Model, dataloader: DataLoader["ForExtractFolder"], device: Device
+) -> tuple[FeatureArray, DirList, FileNameList]:
+    features_list: list[Tensor] = []
+    dirnames_list: list[str] = []
+    filenames_list: list[str] = []
+    model.eval()
+    with torch.no_grad():
+        for x, _, dirnames, filenames in dataloader:
+            _, features = model(x.to(device))
+            features_list.extend(
+                torch.flatten(features, start_dim=1).detach().cpu().tolist()
+            )
+            dirnames_list.extend(dirnames)
+            filenames_list.extend(filenames)
+    features_array = np.array(features_list)
+
+    return features_array, dirnames_list, filenames_list
+
+
 class ForExtractFolder(VisionDataset):
     def __init__(
         self,
@@ -219,7 +249,7 @@ class ForExtractFolder(VisionDataset):
         found_classes = find_classes(directory)
         return cast(tuple[list[str], dict[str, int]], found_classes)
 
-    def __getitem__(self, index: int) -> tuple[Any, Any, str, str]:
+    def __getitem__(self, index: int) -> tuple[Tensor, int, str, str]:
         (
             path,
             target,

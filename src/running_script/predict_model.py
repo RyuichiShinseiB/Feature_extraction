@@ -8,13 +8,14 @@ import numpy as np
 import polars as pl
 import torch
 from omegaconf import DictConfig
+from torch.utils.data import DataLoader
 from torchinfo import summary
 
 # First Party Library
 from src import Tensor
-from src.configs.model_configs import MyConfig, dictconfig2dataclass
+from src.configs.model_configs import ExtractConfig, dictconfig2dataclass
 from src.predefined_models import model_define
-from src.utilities import get_dataloader
+from src.utilities import extract_features, get_dataloader
 
 
 @hydra.main(
@@ -23,60 +24,66 @@ from src.utilities import get_dataloader
     config_name="configs",
 )
 def main(_cfg: DictConfig) -> None:
-    cfg = dictconfig2dataclass(_cfg, MyConfig)
+    cfg = dictconfig2dataclass(_cfg, ExtractConfig)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # 抽出した特徴量の保存先
-    feature_storing_path = "./reports/features" / Path(
-        cfg.train.trained_save_path
-    )
-
+    base_save_path = Path(cfg.train_hyperparameter.trained_save_path)
+    model_save_path = "./models" / base_save_path / "model_parameters.pth"
+    feature_storing_path = "./reports/features" / Path(cfg.feature_save_path)
     # 事前学習済みのモデルのロード
     # Load pretrained model
     model = model_define(cfg.model, device=device).to(device)
-    # model.load_state_dict(torch.load(cfg.pretrained_path))
+    model.load_state_dict(torch.load(model_save_path))
     summary(model, (1, 1, 32, 32))
 
     # データローダーを設定
     # extraction=Trueにすることで、データだけでなくデータのファイル名とディレクトリ名も取得
     dataloader = get_dataloader(
-        cfg.dataset.path,
+        cfg.dataset.train_path,
         cfg.dataset.transform,
-        cfg.train.batch_size,
+        cfg.train_hyperparameter.batch_size,
         generator_seed=None,
         extraction=True,
     )
-
-    features_list: list[Tensor] = []
-    dirnames_list: list[str] = []
-    filenames_list: list[str] = []
-    model.eval()
-    with torch.no_grad():
-        for x, _, dirnames, filenames in dataloader:
-            _, features = model(x.to(device))
-            features_list.extend(
-                torch.flatten(features, start_dim=1).detach().cpu().tolist()
-            )
-            dirnames_list.extend(dirnames)
-            filenames_list.extend(filenames)
-    features_array = np.array(features_list)
+    features, dirnames, filenames = extract_features(model, dataloader, device)
     df = (
         pl.DataFrame(
-            features_array,
+            features,
         )
         .select(
             [
                 pl.all(),
-                pl.lit(pl.Series("dirname", dirnames_list)),
-                pl.lit(pl.Series("filename", filenames_list)),
+                pl.lit(pl.Series("dirname", dirnames)),
+                pl.lit(pl.Series("filename", filenames)),
             ]
         )
         .sort(pl.col("filename"))
     )
+    df.write_csv(feature_storing_path / "features_train_data.csv")
 
-    print(df)
-
-    df.write_csv(feature_storing_path / "features.csv")
+    dataloader = get_dataloader(
+        cfg.dataset.check_path,
+        cfg.dataset.transform,
+        cfg.train_hyperparameter.batch_size,
+        generator_seed=None,
+        extraction=True,
+    )
+    features, dirnames, filenames = extract_features(model, dataloader, device)
+    df = (
+        pl.DataFrame(
+            features,
+        )
+        .select(
+            [
+                pl.all(),
+                pl.lit(pl.Series("dirname", dirnames)),
+                pl.lit(pl.Series("filename", filenames)),
+            ]
+        )
+        .sort(pl.col("filename"))
+    )
+    df.write_csv(feature_storing_path / "features_check_data.csv")
 
 
 if __name__ == "__main__":

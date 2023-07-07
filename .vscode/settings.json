@@ -67,6 +67,7 @@
         "newaxis",
         "omegaconf",
         "optim",
+        "pretrained",
         "pyplot",
         "randn",
         "randperm",

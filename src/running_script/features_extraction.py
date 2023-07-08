@@ -1,10 +1,9 @@
 # Standard Library
-import os
 from pathlib import Path
+from typing import cast
 
 # Third Party Library
 import hydra
-import numpy as np
 import polars as pl
 import torch
 from omegaconf import DictConfig
@@ -12,7 +11,6 @@ from torch.utils.data import DataLoader
 from torchinfo import summary
 
 # First Party Library
-from src import Tensor
 from src.configs.model_configs import ExtractConfig, dictconfig2dataclass
 from src.predefined_models import model_define
 from src.utilities import extract_features, get_dataloader
@@ -39,6 +37,7 @@ def main(_cfg: DictConfig) -> None:
 
     # データローダーを設定
     # extraction=Trueにすることで、データだけでなくデータのファイル名とディレクトリ名も取得
+    # 訓練データでの特徴量抽出
     dataloader = get_dataloader(
         cfg.dataset.train_path,
         cfg.dataset.transform,
@@ -46,22 +45,19 @@ def main(_cfg: DictConfig) -> None:
         generator_seed=None,
         extraction=True,
     )
-    features, dirnames, filenames = extract_features(model, dataloader, device)
-    df = (
-        pl.DataFrame(
-            features,
-        )
-        .select(
-            [
-                pl.all(),
-                pl.lit(pl.Series("dirname", dirnames)),
-                pl.lit(pl.Series("filename", filenames)),
-            ]
-        )
-        .sort(pl.col("filename"))
+    features, dirnames, filenames = extract_features(
+        model, cast(DataLoader, dataloader), device
+    )
+    df = pl.DataFrame({i: feature for i, feature in features.T}).select(
+        [
+            pl.all(),
+            pl.lit(pl.Series("dirname", dirnames)),
+            pl.lit(pl.Series("filename", filenames)),
+        ]
     )
     df.write_csv(feature_storing_path / "features_train_data.csv")
 
+    # 確認データでの特徴量抽出
     dataloader = get_dataloader(
         cfg.dataset.check_path,
         cfg.dataset.transform,
@@ -69,19 +65,15 @@ def main(_cfg: DictConfig) -> None:
         generator_seed=None,
         extraction=True,
     )
-    features, dirnames, filenames = extract_features(model, dataloader, device)
-    df = (
-        pl.DataFrame(
-            features,
-        )
-        .select(
-            [
-                pl.all(),
-                pl.lit(pl.Series("dirname", dirnames)),
-                pl.lit(pl.Series("filename", filenames)),
-            ]
-        )
-        .sort(pl.col("filename"))
+    features, dirnames, filenames = extract_features(
+        model, cast(DataLoader, dataloader), device
+    )
+    df = pl.DataFrame({i: feature for i, feature in features.T}).select(
+        [
+            pl.all(),
+            pl.lit(pl.Series("dirname", dirnames)),
+            pl.lit(pl.Series("filename", filenames)),
+        ]
     )
     df.write_csv(feature_storing_path / "features_check_data.csv")
 

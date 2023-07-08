@@ -93,3 +93,7 @@ data
 
 # Mypy cache
 .mypy_cache/
+
+# Pretrained model parameters
+*pkl
+*pth

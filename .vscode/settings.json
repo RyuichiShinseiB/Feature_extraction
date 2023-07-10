@@ -84,6 +84,7 @@
         "reparameterization",
         "savefig",
         "scipy",
+        "seaborn",
         "SECAE",
         "SECVAE",
         "selfattention",

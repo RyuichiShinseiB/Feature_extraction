@@ -21,6 +21,8 @@ torchvision = {version = "^0.15.2+cu118", source = "torch_cu118"}
 pandas = "^2.0.3"
 tqdm = "^4.65.0"
 einops = "^0.6.1"
+seaborn = "^0.12.2"
+pyarrow = "^12.0.1"
 
 
 

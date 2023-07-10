@@ -36,15 +36,15 @@ def main(_cfg: DictConfig) -> None:
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先
     # Paths to store trained models and reconstructed images in training
-    base_save_path = Path(cfg.train_hyperparameter.trained_save_path)
+    base_save_path = Path(cfg.train.trained_save_path)
     model_save_path = Path("./models") / base_save_path
     figure_save_path = Path("./reports/figures") / base_save_path
 
     # 再構成画像を保存する間隔
     # Storage interval of reconstructed images
     save_interval = (
-        cfg.train_hyperparameter.epochs
-        // cfg.train_hyperparameter.num_save_reconst_image
+        cfg.train.train_hyperparameter.epochs
+        // cfg.train.train_hyperparameter.num_save_reconst_image
     )
 
     # GPUが使える環境であればCPUでなくGPUを使うようにする設定
@@ -71,7 +71,7 @@ def main(_cfg: DictConfig) -> None:
     train_dataloader, val_dataloader = get_dataloader(
         cfg.dataset.path,
         cfg.dataset.transform,
-        cfg.train_hyperparameter.batch_size,
+        cfg.train.train_hyperparameter.batch_size,
         shuffle=True,
         split_ratio=(0.8, 0.2),
         generator_seed=42,
@@ -79,12 +79,14 @@ def main(_cfg: DictConfig) -> None:
 
     # 損失関数の設定
     criterion = LossFunction(
-        cfg.train_hyperparameter.reconst_loss,
-        cfg.train_hyperparameter.latent_loss,
+        cfg.train.train_hyperparameter.reconst_loss,
+        cfg.train.train_hyperparameter.latent_loss,
     )
 
     # オプティマイザの設定
-    optimizer = optim.Adam(model.parameters(), cfg.train_hyperparameter.lr)
+    optimizer = optim.Adam(
+        model.parameters(), cfg.train.train_hyperparameter.lr
+    )
 
     reconst_images: list[Tensor] = []
     train_losses: list[float] = []
@@ -93,7 +95,7 @@ def main(_cfg: DictConfig) -> None:
     test_image = next(iter(val_dataloader))[0][:64].to(device)
 
     # Training start
-    for epoch in range(cfg.train_hyperparameter.epochs):
+    for epoch in range(cfg.train.train_hyperparameter.epochs):
         train_loss = 0.0
         valid_loss = 0.0
 
@@ -139,7 +141,7 @@ def main(_cfg: DictConfig) -> None:
         print(
             "Epoch: {}/{}\t|Train loss: {:.5f}\t|Valid loss: {:.5f}".format(
                 epoch + 1,
-                cfg.train_hyperparameter.epochs,
+                cfg.train.train_hyperparameter.epochs,
                 train_loss / (_i_train + 1),
                 valid_loss / (_i_valid + 1),
             )
@@ -153,7 +155,7 @@ def main(_cfg: DictConfig) -> None:
                 vutils.make_grid(test_output, normalize=True)
             )
 
-        if cfg.train_hyperparameter.early_stopping:
+        if cfg.train.train_hyperparameter.early_stopping:
             early_stopping(
                 train_loss, model, save_path=model_save_path / "model.pth"
             )
@@ -162,7 +164,9 @@ def main(_cfg: DictConfig) -> None:
     ax = fig.add_subplot(1, 1, 1)
     ax.plot(range(len(train_losses)), train_losses, label="train loss")
     ax.set_xlabel("iterations")
-    ax.set_ylabel(f"{cfg.train_hyperparameter.reconst_loss.upper()} loss")
+    ax.set_ylabel(
+        f"{cfg.train.train_hyperparameter.reconst_loss.upper()} loss"
+    )
     ax.legend()
     if not figure_save_path.exists():
         os.makedirs(figure_save_path)

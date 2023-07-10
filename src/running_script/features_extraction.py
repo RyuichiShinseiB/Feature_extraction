@@ -26,9 +26,10 @@ def main(_cfg: DictConfig) -> None:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # 抽出した特徴量の保存先
-    base_save_path = Path(cfg.train_hyperparameter.trained_save_path)
+    base_save_path = Path(cfg.train.trained_save_path)
     model_save_path = "./models" / base_save_path / "model_parameters.pth"
     feature_storing_path = "./reports/features" / Path(cfg.feature_save_path)
+
     # 事前学習済みのモデルのロード
     # Load pretrained model
     model = model_define(cfg.model, device=device).to(device)
@@ -37,45 +38,52 @@ def main(_cfg: DictConfig) -> None:
 
     # データローダーを設定
     # extraction=Trueにすることで、データだけでなくデータのファイル名とディレクトリ名も取得
-    # 訓練データでの特徴量抽出
+    # 訓練用データでの特徴量抽出
     dataloader = get_dataloader(
         cfg.dataset.train_path,
         cfg.dataset.transform,
-        cfg.train_hyperparameter.batch_size,
+        cfg.train.train_hyperparameter.batch_size,
+        shuffle=False,
         generator_seed=None,
         extraction=True,
     )
     features, dirnames, filenames = extract_features(
         model, cast(DataLoader, dataloader), device
     )
-    df = pl.DataFrame({i: feature for i, feature in features.T}).select(
+    df = pl.DataFrame(features).select(
         [
             pl.all(),
             pl.lit(pl.Series("dirname", dirnames)),
             pl.lit(pl.Series("filename", filenames)),
         ]
     )
-    df.write_csv(feature_storing_path / "features_train_data.csv")
+    df.select(pl.all().sort_by("filename")).write_csv(
+        feature_storing_path / "features_train_data.csv"
+    )
+    del dataloader, df
 
-    # 確認データでの特徴量抽出
+    # 確認用データでの特徴量抽出
     dataloader = get_dataloader(
         cfg.dataset.check_path,
         cfg.dataset.transform,
-        cfg.train_hyperparameter.batch_size,
+        cfg.train.train_hyperparameter.batch_size,
+        shuffle=False,
         generator_seed=None,
         extraction=True,
     )
     features, dirnames, filenames = extract_features(
         model, cast(DataLoader, dataloader), device
     )
-    df = pl.DataFrame({i: feature for i, feature in features.T}).select(
+    df = pl.DataFrame(features).select(
         [
             pl.all(),
             pl.lit(pl.Series("dirname", dirnames)),
             pl.lit(pl.Series("filename", filenames)),
         ]
     )
-    df.write_csv(feature_storing_path / "features_check_data.csv")
+    df.select(pl.all().sort_by("filename")).write_csv(
+        feature_storing_path / "features_check_data.csv"
+    )
 
 
 if __name__ == "__main__":

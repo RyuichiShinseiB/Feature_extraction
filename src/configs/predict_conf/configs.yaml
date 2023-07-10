@@ -10,15 +10,16 @@ model:
     encoder_output_activation: "selu"
     decoder_output_activation: "sigmoid"
 
-train_hyperparameter:
-  lr: 1e-3
-  epochs: 100
-  batch_size: 128
-  reconst_loss: bce
-  latent_loss: null
-  num_save_reconst_image: 5
-  early_stopping: False
-  trained_save_path: SimpleCAE32/2023-07-07/17-55-55/
+train:
+  trained_save_path: SimpleCAE32/2023-07-10/12-37-46
+  train_hyperparameter:
+    lr: 1e-3
+    epochs: 100
+    batch_size: 128
+    reconst_loss: bce
+    latent_loss: null
+    num_save_reconst_image: 5
+    early_stopping: False
 
 dataset:
   image_target: CNTForest

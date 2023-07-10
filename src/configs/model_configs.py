@@ -59,7 +59,14 @@ class TrainHyperParameterConfig:
     latent_loss: Literal["softplus", "general"] | None = None
     num_save_reconst_image: int = 5
     early_stopping: bool = False
+
+
+@dataclass
+class TrainSetConfig:
     trained_save_path: str = "./models"
+    train_hyperparameter: TrainHyperParameterConfig = (
+        TrainHyperParameterConfig()
+    )
 
 
 @dataclass
@@ -80,18 +87,14 @@ class ExtractDatasetConfig:
 @dataclass
 class TrainConfig:
     model: ModelConfig = ModelConfig()
-    train_hyperparameter: TrainHyperParameterConfig = (
-        TrainHyperParameterConfig()
-    )
+    train: TrainSetConfig = TrainSetConfig()
     dataset: TrainDatasetConfig = TrainDatasetConfig()
 
 
 @dataclass
 class ExtractConfig:
     model: ModelConfig = ModelConfig()
-    train_hyperparameter: TrainHyperParameterConfig = (
-        TrainHyperParameterConfig()
-    )
+    train: TrainSetConfig = TrainSetConfig()
     dataset: ExtractDatasetConfig = ExtractDatasetConfig()
     feature_save_path: str = "${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}"
 
@@ -133,7 +136,7 @@ def dictconfig2dataclass(
 def main(cfg: DictConfig) -> None:
     print(f"{type(cfg)=}")
     print(OmegaConf.to_container(cfg))
-    dataclass_cfg = dictconfig2dataclass(cfg, MyConfig)
+    dataclass_cfg = dictconfig2dataclass(cfg, TrainConfig)
     print(type(dataclass_cfg))
     print(asdict(dataclass_cfg))
 
@@ -142,6 +145,7 @@ if __name__ == "__main__":
     # Standard Library
     from pprint import pprint
 
+    main()
     d = {
         "model": {
             "name": "SimpleCAE32",
@@ -156,15 +160,17 @@ if __name__ == "__main__":
                 "decoder_output_activation": "relu",
             },
         },
-        "train_hyperparameter": {
-            "lr": 0.001,
-            "epochs": 100,
-            "batch_size": 128,
-            "reconst_loss": "mse",
-            "latent_loss": None,
-            "num_save_reconst_image": 5,
-            "early_stopping": False,
-            "trained_save_path": "${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}",
+        "train": {
+            "trained_save_path": "SimpleCAE32/2023-07-07/17-55-55/",
+            "train_hyperparameter": {
+                "lr": 0.001,
+                "epochs": 100,
+                "batch_size": 128,
+                "reconst_loss": "mse",
+                "latent_loss": None,
+                "num_save_reconst_image": 5,
+                "early_stopping": False,
+            },
         },
         "dataset": {
             "image_target": "CNTForest",
@@ -192,15 +198,17 @@ if __name__ == "__main__":
                 "decoder_output_activation": "sigmoid",
             },
         },
-        "train_hyperparameter": {
-            "lr": 0.001,
-            "epochs": 100,
-            "batch_size": 128,
-            "reconst_loss": "mse",
-            "latent_loss": None,
-            "num_save_reconst_image": 5,
-            "early_stopping": False,
-            "trained_save_path": "${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}",
+        "train": {
+            "trained_save_path": "SimpleCAE32/2023-07-07/17-55-55/",
+            "train_hyperparameter": {
+                "lr": 0.001,
+                "epochs": 100,
+                "batch_size": 128,
+                "reconst_loss": "mse",
+                "latent_loss": None,
+                "num_save_reconst_image": 5,
+                "early_stopping": False,
+            },
         },
         "dataset": {
             "image_target": "CNTForest",

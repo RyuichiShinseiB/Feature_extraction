@@ -32,7 +32,6 @@ def main(_cfg: DictConfig) -> None:
     # Display Configuration
     display_cfg(_cfg)
     cfg = dictconfig2dataclass(_cfg, TrainConfig)
-    del _cfg
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先
     # Paths to store trained models and reconstructed images in training

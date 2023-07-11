@@ -24,7 +24,7 @@ def calc_loss(
 class LossFunction:
     def __init__(
         self,
-        reconst_loss_type: Literal["bce", "mse"],
+        reconst_loss_type: Literal["bce", "mse", "None"],
         var_calc_type: Literal["softplus", "general"] | None,
     ) -> None:
         self.reconst: torch.nn.BCELoss | torch.nn.MSELoss

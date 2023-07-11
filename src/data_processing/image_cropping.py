@@ -54,8 +54,8 @@ def crop_image(
     return cropped_images, positions
 
 
-crop_size = (32, 32)
-stride = 16
+crop_size = (128, 128)
+stride = 64
 original_image_dir = Path(
     "/home/shinsei/MyResearchs/feat_extrc/data/interim/CNTForest/exp1-9_dataset_1280x960"
 )

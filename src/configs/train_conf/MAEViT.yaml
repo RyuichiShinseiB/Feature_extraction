@@ -1,0 +1,39 @@
+model:
+  name: MAEViT
+  hyper_parameters:
+      input_channels: 3
+      emb_dim: 192
+      num_patch_row: 2
+      image_size: 32
+      encoder_num_blocks: 12
+      decoder_num_blocks: 4
+      encoder_heads: 3
+      decoder_heads: 3
+      encoder_hidden_dim: 768
+      decoder_hidden_dim: 768
+      mask_ratio: 0.75
+      dropout: 0
+
+train:
+  trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  train_hyperparameter:
+    lr: 1e-3
+    epochs: 100
+    batch_size: 128
+    reconst_loss: "None"
+    latent_loss: null
+    num_save_reconst_image: 5
+    early_stopping: False
+
+dataset:
+  image_target: CNTForest
+  path: ./data/processed/CNTForest/cnt_sem_32x32/10k
+  transform:
+    Grayscale: 1
+    RandomVerticalFlip: 0.5
+    RandomHorizontalFlip: 0.5
+    ToTensor: 0
+
+hydra:
+  run:
+    dir: ./models/${train.trained_save_path}

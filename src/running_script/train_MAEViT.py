@@ -12,10 +12,7 @@ from torch import optim
 
 # First Party Library
 from src import Tensor
-from src.configs.model_configs import (
-    TrainAutoencoderConfig,
-    dictconfig2dataclass,
-)
+from src.configs.model_configs import TrainMAEViTConfig, dictconfig2dataclass
 from src.loss_function import LossFunction, calc_loss
 from src.predefined_models import model_define
 from src.utilities import (
@@ -29,12 +26,12 @@ from src.utilities import (
 @hydra.main(
     version_base=None,
     config_path="../configs/train_conf",
-    config_name="autoencoder",
+    config_name="MAEViT",
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
     display_cfg(_cfg)
-    cfg = dictconfig2dataclass(_cfg, TrainAutoencoderConfig)
+    cfg = dictconfig2dataclass(_cfg, TrainMAEViTConfig)
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先
     # Paths to store trained models and reconstructed images in training
@@ -80,10 +77,7 @@ def main(_cfg: DictConfig) -> None:
     )
 
     # 損失関数の設定
-    criterion = LossFunction(
-        cfg.train.train_hyperparameter.reconst_loss,
-        cfg.train.train_hyperparameter.latent_loss,
-    )
+    criterion = LossFunction()
 
     # オプティマイザの設定
     optimizer = optim.Adam(

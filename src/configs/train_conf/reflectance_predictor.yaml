@@ -1,0 +1,41 @@
+model:
+  pretrained_model:
+    name: SimpleCAE32
+    parameters_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    hyper_parameters:
+      input_channels: 1
+      latent_dimensions: 128
+      encoder_base_channels: 64
+      decoder_base_channels: 64
+      encoder_activation: "selu"
+      decoder_activation: "selu"
+      encoder_output_activation: "selu"
+      decoder_output_activation: "sigmoid"
+
+  predictor_model:
+    model: MLP
+    hyper_parameters:
+      hidden_dims:
+        - ${model.pretrained_model.hyper_parameters.latent_dimensions}
+        - 100
+        - 200
+        - 400
+        - 500
+      activation: leakyrelu
+
+train:
+  train_hyperparameter:
+    lr: 1e-3
+    epochs: 10
+    batch_size: 1
+    reconst_loss: mse
+    latent_loss: null
+    num_save_reconst_image: null
+    early_stopping: False
+
+dataset:
+  path:
+
+hydra:
+run:
+  dir: ./models/${train.trained_save_path}

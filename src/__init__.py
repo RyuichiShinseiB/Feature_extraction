@@ -9,6 +9,7 @@ Model: TypeAlias = torch.nn.Module
 Device: TypeAlias = Literal["cpu", "cuda"] | torch.device
 Tensor: TypeAlias = torch.Tensor
 ModelName = Literal[
+    # Autoencoder type model
     "SECAE32",
     "SECAE64",
     "SECVAE64",
@@ -17,7 +18,10 @@ ModelName = Literal[
     "SimpleCAE64",
     "SimpleCAE128",
     "SimpleCVAE64",
+    "SimpleCVAEsoftplus32",
     "SimpleCVAEsoftplus64",
+    # ViT type model
+    "MAEViT",
 ]
 
 ActivationName = Literal[

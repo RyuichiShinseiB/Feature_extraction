@@ -161,6 +161,8 @@ def main(_cfg: DictConfig) -> None:
             early_stopping(
                 train_loss, model, save_path=model_save_path / "model.pth"
             )
+            if early_stopping.early_stop:
+                break
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)

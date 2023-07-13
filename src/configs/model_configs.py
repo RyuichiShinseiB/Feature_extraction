@@ -70,7 +70,7 @@ class AutoencoderModelConfig:
 
 @dataclass
 class MAEViTModelConfig:
-    name: str = "MAEViT"
+    name: ModelName = "MAEViT"
     hyper_parameters: MAEViTHyperParameter = MAEViTHyperParameter()
 
 

@@ -23,7 +23,7 @@ from . import (
     TransformsName,
     TransformsNameValue,
 )
-from .configs.model_configs import MyConfig
+from .configs.model_configs import TrainAutoencoderConfig, TrainMAEViTConfig
 
 IMG_EXTENSIONS = (
     ".jpg",
@@ -178,8 +178,10 @@ def calc_loss(
     return loss, x_pred
 
 
-def display_cfg(cfg: MyConfig | DictConfig) -> None:
-    if isinstance(cfg, MyConfig):
+def display_cfg(
+    cfg: TrainAutoencoderConfig | TrainMAEViTConfig | DictConfig,
+) -> None:
+    if isinstance(cfg, (TrainAutoencoderConfig, TrainMAEViTConfig)):
         pprint(asdict(cfg))
     elif isinstance(cfg, DictConfig):
         print(OmegaConf.to_yaml(cfg))

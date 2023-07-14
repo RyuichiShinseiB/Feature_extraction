@@ -19,7 +19,7 @@ from src.utilities import extract_features, get_dataloader
 @hydra.main(
     version_base=None,
     config_path="../configs/predict_conf",
-    config_name="configs",
+    config_name="autoencoder",
 )
 def main(_cfg: DictConfig) -> None:
     cfg = dictconfig2dataclass(_cfg, ExtractConfig)

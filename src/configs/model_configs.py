@@ -1,4 +1,5 @@
 # Standard Library
+import os
 from dataclasses import Field, asdict, dataclass, field, fields, is_dataclass
 from typing import Any, Literal, Type, TypeAlias, TypeVar, get_type_hints
 
@@ -160,6 +161,7 @@ def dictconfig2dataclass(
 
 @hydra.main(version_base=None, config_path="train_conf", config_name="MAEViT")
 def main(cfg: DictConfig) -> None:
+    print("In main: ", os.getcwd())
     print(f"{type(cfg)=}")
     print(OmegaConf.to_container(cfg))
     dataclass_cfg = dictconfig2dataclass(cfg, TrainMAEViTConfig)
@@ -168,4 +170,5 @@ def main(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
+    print("In if __name__: ", os.getcwd())
     main()

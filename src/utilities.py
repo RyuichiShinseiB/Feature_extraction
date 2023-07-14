@@ -197,6 +197,8 @@ def extract_features(
     with torch.no_grad():
         for x, _, dirnames, filenames in dataloader:
             _, features = model(x.to(device))
+            if isinstance(features, tuple):
+                features = features[0]
             features_list.extend(
                 torch.flatten(features, start_dim=1).detach().cpu().tolist()
             )

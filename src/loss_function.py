@@ -8,6 +8,10 @@ import torch
 from . import Model, Tensor
 
 
+def torch_log(x: Tensor) -> Tensor:
+    return torch.log(torch.clamp(x, min=1e-10))
+
+
 def calc_loss(
     input_data: Tensor,
     reconst_loss: Callable[[Tensor, Tensor], Tensor],
@@ -15,7 +19,9 @@ def calc_loss(
     model: Model,
 ) -> tuple[Tensor, Tensor]:
     x_pred, _latent = model(input_data)
-    loss = reconst_loss(x_pred, input_data)
+    loss = reconst_loss(
+        x_pred.flatten(start_dim=1), input_data.flatten(start_dim=1)
+    )
     if latent_loss is not None:
         loss += latent_loss(_latent[-2], _latent[-1])
     return loss, x_pred
@@ -27,20 +33,38 @@ class LossFunction:
         reconst_loss_type: Literal["bce", "mse", "None"],
         var_calc_type: Literal["softplus", "general"] | None,
     ) -> None:
-        self.reconst: torch.nn.BCELoss | torch.nn.MSELoss
-        self.latent: LatentLoss | None
+        self.latent_loss: LatentLoss | None
 
         if reconst_loss_type == "bce":
-            self.reconst = torch.nn.BCELoss()
+            self.reconst_loss = self.bce_loss
         elif reconst_loss_type == "mse":
-            self.reconst = torch.nn.MSELoss()
+            self.reconst_loss = self.mse_loss
         else:
-            raise RuntimeError("Please select another loss function")
+            raise ValueError("Please select another loss function")
 
         if var_calc_type is not None:
-            self.latent = LatentLoss(var_calc_type)
+            self.latent_loss = LatentLoss(var_calc_type)
         else:
-            self.latent = None
+            self.latent_loss = None
+
+    @staticmethod
+    def bce_loss(reconst_data: Tensor, input_data: Tensor) -> Tensor:
+        return -torch.mean(
+            torch.sum(
+                input_data * torch_log(reconst_data)
+                + (1 - input_data) * torch_log(1 - reconst_data),
+                dim=1,
+            )
+        )
+
+    @staticmethod
+    def mse_loss(reconst_data: Tensor, input_data: Tensor) -> Tensor:
+        return -torch.mean(
+            torch.sum(
+                (reconst_data - input_data) ** 2,
+                dim=1,
+            )
+        )
 
 
 class LatentLoss:
@@ -50,18 +74,15 @@ class LatentLoss:
         elif var_calc_type == "standard":
             self.latent_loss = self.general_latent
         else:
-            raise RuntimeError("'softplus' or 'general' can be selected.")
+            raise ValueError("'softplus' or 'general' can be selected.")
 
-    def __call__(self, mean: Tensor, var: Tensor) -> Tensor:
-        return self.latent_loss(mean, var)
+    def __call__(self, mean: Tensor, std: Tensor) -> Tensor:
+        return self.latent_loss(mean, std)
 
     @staticmethod
-    def softplus_latent(mean: Tensor, var: Tensor) -> Tensor:
-        eps = 1e-5
+    def softplus_latent(mean: Tensor, std: Tensor) -> Tensor:
         return -0.5 * torch.mean(
-            torch.sum(1 + torch.log(var + eps) - mean**2 - var, dim=1).view(
-                -1
-            )
+            torch.sum(1 + 2 * torch_log(std) - mean**2 - std**2, dim=1)
         )
 
     @staticmethod

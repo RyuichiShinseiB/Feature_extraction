@@ -33,16 +33,22 @@ class VariationalEncoder(nn.Module):
         self.l5 = DownShape(
             encoder_base_channels * 8, encoder_base_channels * 16, activation
         )
+        self.l6 = nn.Sequential(
+            nn.Linear(encoder_base_channels * 16, latent_dimensions),
+            add_activation(activation),
+        )
 
-        self.l_mean = nn.Sequential(
+        self.l7_mean = nn.Sequential(
             nn.Linear(
-                encoder_base_channels * 16, latent_dimensions, bias=False
+                latent_dimensions,
+                latent_dimensions,
             ),
             add_activation(output_activation),
         )
-        self.l_var = nn.Sequential(
+        self.l7_std = nn.Sequential(
             nn.Linear(
-                encoder_base_channels * 16, latent_dimensions, bias=False
+                latent_dimensions,
+                latent_dimensions,
             ),
             nn.Softplus(),
         )
@@ -54,10 +60,11 @@ class VariationalEncoder(nn.Module):
         h = self.l4(h)
         h = self.l5(h)
         h = torch.flatten(h, start_dim=1)
-        mean = self.l_mean(h)
-        var = self.l_var(h)
+        h = self.l6(h)
+        mean = self.l7_mean(h)
+        std = self.l7_std(h)
 
-        return mean, var
+        return mean, std
 
 
 ######################################################
@@ -136,17 +143,15 @@ class SimpleCVAEsoftplus32(nn.Module):
     def forward(
         self, x: Tensor
     ) -> tuple[Tensor, tuple[Tensor, Tensor, Tensor]]:
-        mean, var = self.encoder(x)
-        z = self.reparameterization(mean, var)
-        x_pred = self.decoder(z)
+        mean, std = self.encoder(x)
+        z = self.reparameterization(mean, std)
+        x_pred = self.decoder(z.view(-1, z.shape[1], 1, 1))
 
-        return x_pred, (z, mean, var)
+        return x_pred, (z, mean, std)
 
-    def reparameterization(self, mean: Tensor, var: Tensor) -> Tensor:
+    def reparameterization(self, mean: Tensor, std: Tensor) -> Tensor:
         eps = torch.randn(mean.shape, device=self.device)
-        return (mean + eps * torch.sqrt(var)).view(
-            mean.shape[0], self.latent_dimensions, 1, 1
-        )
+        return mean + eps * std
 
 
 if __name__ == "__main__":

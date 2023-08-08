@@ -28,13 +28,14 @@ def main(_cfg: DictConfig) -> None:
     # 抽出した特徴量の保存先
     base_save_path = Path(cfg.train.trained_save_path)
     model_save_path = "./models" / base_save_path / "model_parameters.pth"
-    feature_storing_path = "./reports/features" / Path(cfg.feature_save_path)
+    feature_storing_path = "./reports/features" / Path(
+        cfg.train.trained_save_path
+    )
 
     # 事前学習済みのモデルのロード
     # Load pretrained model
     model = model_define(cfg.model, device=device).to(device)
     model.load_state_dict(torch.load(model_save_path))
-    summary(model, (1, 1, 32, 32))
 
     # データローダーを設定
     # extraction=Trueにすることで、データだけでなくデータのファイル名とディレクトリ名も取得

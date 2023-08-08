@@ -14,6 +14,7 @@ ModelName = Literal[
     "SECAE64",
     "SECVAE64",
     "SECVAEsoftplus64",
+    "SimpleCAE16",
     "SimpleCAE32",
     "SimpleCAE64",
     "SimpleCAE128",

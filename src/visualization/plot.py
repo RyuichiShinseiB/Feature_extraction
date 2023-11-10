@@ -11,17 +11,19 @@ from PIL import Image
 
 def scatter_each_classes(
     data: np.ndarray,
-    class_labels: list[int],
+    class_labels: np.ndarray,
     rank: np.ndarray,
     markers: list[str],
     colors: list[str],
     xylabel: tuple[str, str],
     face_color: str = "valid",
-    scatter_classes: tuple[int, ...] | None = None,
+    scatter_classes: list[int] | None = None,
     fontsize: int = 15,
+    plot_range: tuple[float, float] | None = None,
+    show_legend: bool = True,
     path: str | Path | None = None,
 ) -> None:
-    labels: np.ndarray | tuple[int, ...] = (
+    labels: np.ndarray | list[int] = (
         np.unique(class_labels) if scatter_classes is None else scatter_classes
     )
     markers = (
@@ -30,12 +32,10 @@ def scatter_each_classes(
         else ["o"] * np.unique(class_labels).shape[0]
     )
     colors = (
-        [plt.get_cmap("tab10")(i) for i in range(len(labels))]
+        [plt.get_cmap("tab10")(i) for i in range(len(np.unique(class_labels)))]
         if colors == "tab10"
         else colors
     )
-    print(markers)
-
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     ax.set_axisbelow(True)
@@ -83,19 +83,24 @@ def scatter_each_classes(
                     zorder=r,
                 )
 
-    x_range = ax.get_xlim()
-    y_range = ax.get_ylim()
-    max_abs_range = np.max(np.abs((y_range, x_range))) * 1.2
-    print(f"{max_abs_range=}")
+    if plot_range is None:
+        x_range = ax.get_xlim()
+        y_range = ax.get_ylim()
+        max_abs_range = np.max(np.abs((y_range, x_range))) * 1.2
+        print(f"{max_abs_range=}")
 
-    ax.set_ylim(-max_abs_range, max_abs_range)
-    ax.set_xlim(-max_abs_range, max_abs_range)
+        ax.set_ylim(-max_abs_range, max_abs_range)
+        ax.set_xlim(-max_abs_range, max_abs_range)
+    else:
+        ax.set_xlim(plot_range)
+        ax.set_ylim(plot_range)
     ax.set_aspect("equal", "datalim")
 
     ax.set_box_aspect(1)
     ax.set_xlabel(xylabel[0], fontsize=fontsize)
     ax.set_ylabel(xylabel[1], fontsize=fontsize)
-    ax.legend(fontsize=fontsize, loc="upper left", bbox_to_anchor=(1, 1))
+    if show_legend:
+        ax.legend(fontsize=fontsize, loc="upper left", bbox_to_anchor=(1, 1))
 
     ax.grid(which="major")
 

@@ -57,10 +57,13 @@ def crop_image(
 crop_size = (128, 128)
 stride = 64
 original_image_dir = Path(
-    "/home/shinsei/MyResearchs/feat_extrc/data/interim/CNTForest/exp1-9_dataset_1280x960"
+    "/home/shinsei/MyResearchs/feat_extrc/"
+    "data/interim/CNTForest"
+    "/exp1-9_dataset_1280x960"
 )
 save_image_dir = Path(
-    f"/home/shinsei/MyResearchs/feat_extrc/data/processed/CNTForest/cnt_sem_{crop_size[0]}x{crop_size[1]}"
+    "/home/shinsei/MyResearchs/feat_extrc/"
+    f"data/processed/CNTForest/cnt_sem_{crop_size[0]}x{crop_size[1]}"
 )
 
 if not original_image_dir.parent.exists():

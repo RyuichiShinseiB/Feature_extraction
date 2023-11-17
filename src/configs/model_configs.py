@@ -1,7 +1,15 @@
 # Standard Library
 import os
-from dataclasses import Field, asdict, dataclass, field, fields, is_dataclass
-from typing import Any, Literal, Type, TypeAlias, TypeVar, get_type_hints
+from dataclasses import (
+    Field,
+    _DataclassT,
+    asdict,
+    dataclass,
+    field,
+    fields,
+    is_dataclass,
+)
+from typing import Literal, Type, get_type_hints
 
 # Third Party Library
 import hydra
@@ -9,8 +17,6 @@ from omegaconf import DictConfig, OmegaConf
 
 # First Party Library
 from src import ActivationName, ModelName, TransformsNameValue
-
-Dataclass = TypeVar("Dataclass")
 
 
 @dataclass
@@ -133,7 +139,7 @@ class ExtractConfig:
     feature_save_path: str = "${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}"
 
 
-def dict2dataclass(cls: Type[Dataclass], src: dict) -> Dataclass:
+def dict2dataclass(cls: Type[_DataclassT], src: dict) -> _DataclassT:
     kwargs = dict()
     field_dict: dict[str, Field] = {fld.name: fld for fld in fields(cls)}
     field_type_dict: dict[str, type] = get_type_hints(cls)
@@ -149,13 +155,13 @@ def dict2dataclass(cls: Type[Dataclass], src: dict) -> Dataclass:
 
 
 def dictconfig2dataclass(
-    cfg: DictConfig, dataclass_cfg_cls: Type[Dataclass]
-) -> Dataclass:
+    cfg: DictConfig, dataclass_cfg_cls: Type[_DataclassT]
+) -> _DataclassT:
     dictconfig = OmegaConf.to_container(cfg, resolve=True)
     if isinstance(dictconfig, dict):
         config = dict2dataclass(dataclass_cfg_cls, dictconfig)
     else:
-        raise ValueError(f"cfg is not dictconfig.")
+        raise ValueError("cfg is not dictconfig.")
     return config
 
 

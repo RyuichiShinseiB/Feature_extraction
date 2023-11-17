@@ -77,7 +77,10 @@ def main(_cfg: DictConfig) -> None:
     )
 
     # 損失関数の設定
-    criterion = LossFunction()
+    criterion = LossFunction(
+        cfg.train.train_hyperparameter.reconst_loss,
+        cfg.train.train_hyperparameter.latent_loss,
+    )
 
     # オプティマイザの設定
     optimizer = optim.Adam(
@@ -105,8 +108,8 @@ def main(_cfg: DictConfig) -> None:
             # 損失の計算
             loss, _ = calc_loss(
                 input_data=x,
-                reconst_loss=criterion.reconst,
-                latent_loss=criterion.latent,
+                reconst_loss=criterion.reconst_loss,
+                latent_loss=criterion.latent_loss,
                 model=model,
             )
 
@@ -125,8 +128,8 @@ def main(_cfg: DictConfig) -> None:
             x = x.to(device)
             loss, _ = calc_loss(
                 input_data=x,
-                reconst_loss=criterion.reconst,
-                latent_loss=criterion.latent,
+                reconst_loss=criterion.reconst_loss,
+                latent_loss=criterion.latent_loss,
                 model=model,
             )
 

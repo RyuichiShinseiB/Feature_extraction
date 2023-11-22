@@ -2,7 +2,7 @@ model:
   name: SimpleCAE16
   hyper_parameters:
     input_channels: 1
-    latent_dimensions: 128
+    latent_dimensions: 128   # default: 128
     encoder_base_channels: 64
     decoder_base_channels: 64
     encoder_activation: "selu"
@@ -13,7 +13,7 @@ model:
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
-    lr: 1e-3
+    lr: 5e-4
     epochs: 100
     batch_size: 128
     reconst_loss: bce

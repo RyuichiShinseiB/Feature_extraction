@@ -21,24 +21,26 @@ class DimReduction:
             "scaler": False,
         }
 
-    def whatis_reduction_meth_name(self) -> str:
-        return str(type(self.reduction_meth))
-
-    def whatis_scaler_name(self) -> str:
-        return str(type(self.scaler))
-
-    def fit_reduction_meth(self, x: npt.NDArray) -> None:
+    def fit(self, x: npt.NDArray) -> None:
         if self.scaler is not None:
-            self.scaler.fit(x)
+            x = self.scaler.fit_transform(x)
         self.reduction_meth.fit(x)
         self.fitting_flags["reduction_meth"] = True
 
-    def fit_transform_reduction_meth(self, x: npt.NDArray) -> None:
+    def fit_transform(self, x: npt.NDArray) -> npt.NDArray:
         if self.scaler is not None:
-            if not self.fitting_flags["scaler"]:
-                self.scaler.fit(x)
-        self.reduction_meth.fit_transform(x)
+            x = self.scaler.fit_transform(x)
+        x_fitted = self.reduction_meth.fit_transform(x)
         self.fitting_flags["reduction_meth"] = True
+        return x_fitted
+
+    def transform(self, x: npt.NDArray) -> npt.NDArray:
+        if self.scaler is not None:
+            x = self.scaler.fit_transform(x)
+        x_transformed = self.reduction_meth.transform(x)
+        self.fitting_flags["reduction_meth"] = True
+
+        return x_transformed
 
 
 if __name__ == "__main__":
@@ -46,5 +48,5 @@ if __name__ == "__main__":
         PCA,
         StandardScaler,
     )
-    print(obj.whatis_reduction_meth_name)
-    print(obj.whatis_scaler_name())
+    obj.reduction_meth
+    obj.scaler

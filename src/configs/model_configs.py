@@ -1,15 +1,8 @@
 # Standard Library
-import os
-from dataclasses import (
-    Field,
-    _DataclassT,
-    asdict,
-    dataclass,
-    field,
-    fields,
-    is_dataclass,
-)
-from typing import Literal, Type, get_type_hints
+from dataclasses import Field, dataclass, field, fields, is_dataclass
+from pathlib import Path
+from pprint import pprint
+from typing import Literal, Type, TypeGuard, TypeVar, get_type_hints
 
 # Third Party Library
 import hydra
@@ -19,29 +12,54 @@ from omegaconf import DictConfig, OmegaConf
 from src import ActivationName, ModelName, TransformsNameValue
 
 
+def _is_recursivedataclass(obj: type) -> TypeGuard["RecursiveDataclass"]:
+    return is_dataclass(obj) and issubclass(obj, RecursiveDataclass)
+
+
+RecursiveDcT = TypeVar("RecursiveDcT", bound="RecursiveDataclass")
+
+DataClassT = TypeVar("DataClassT", bound="RecursiveDataclass")
+
+
 @dataclass
 class RecursiveDataclass:
     pass
 
     @classmethod
-    def from_dict(cls, src: dict) -> "RecursiveDataclass":
+    def from_dict(cls: Type[RecursiveDcT], src: dict) -> RecursiveDcT:
         kwargs = dict()
-        field_dict: dict[str, Field] = {fld.name: fld for fld in fields(cls)}
+        field_dict: dict[str, Field] = {
+            field.name: field for field in fields(cls)
+        }
         field_type_dict: dict[str, type] = get_type_hints(cls)
         for src_key, src_value in src.items():
             assert src_key in field_dict, "Invalid Data Structure"
             fld = field_dict[src_key]
             field_type = field_type_dict[fld.name]
-            if issubclass(field_type, RecursiveDataclass):
+            if _is_recursivedataclass(field_type):
                 kwargs[src_key] = field_type.from_dict(src_value)
             else:
                 kwargs[src_key] = src_value
         return cls(**kwargs)
 
+    @classmethod
+    def from_dictconfig(
+        cls: Type[RecursiveDcT], cfg: DictConfig
+    ) -> RecursiveDcT:
+        src = OmegaConf.to_container(cfg, resolve=True)
+        if isinstance(src, dict):
+            return cls.from_dict(src)
+        else:
+            raise TypeError(
+                "Expected a config format like dict,"
+                "but a config format that converts to"
+                f"{type(src)} was entered."
+            )
+
 
 # Hyper parameters dataclasses
 @dataclass
-class AutoencoderHyperParameter:
+class AutoencoderHyperParameter(RecursiveDataclass):
     input_channels: int = 1
     latent_dimensions: int = 128
     encoder_base_channels: int = 64
@@ -53,7 +71,7 @@ class AutoencoderHyperParameter:
 
 
 @dataclass
-class MAEViTHyperParameter:
+class MAEViTHyperParameter(RecursiveDataclass):
     input_channels: int = 3
     emb_dim: int = 192
     num_patch_row: int = 2
@@ -70,20 +88,20 @@ class MAEViTHyperParameter:
 
 # Model dataclasses
 @dataclass
-class AutoencoderModelConfig:
+class AutoencoderModelConfig(RecursiveDataclass):
     name: ModelName = "SimpleCAE64"
     hyper_parameters: AutoencoderHyperParameter = AutoencoderHyperParameter()
 
 
 @dataclass
-class MAEViTModelConfig:
+class MAEViTModelConfig(RecursiveDataclass):
     name: ModelName = "MAEViT"
     hyper_parameters: MAEViTHyperParameter = MAEViTHyperParameter()
 
 
 # Training hyper parameters dataclasses
 @dataclass
-class TrainHyperParameter:
+class TrainHyperParameter(RecursiveDataclass):
     lr: float = 1e-3
     epochs: int = 100
     batch_size: int = 64
@@ -95,21 +113,21 @@ class TrainHyperParameter:
 
 # Basic Training configuration dataclasses
 @dataclass
-class TrainConfig:
+class TrainConfig(RecursiveDataclass):
     trained_save_path: str = "./models"
     train_hyperparameter: TrainHyperParameter = TrainHyperParameter()
 
 
 # Dataset dataclasses
 @dataclass
-class TrainDatasetConfig:
+class TrainDatasetConfig(RecursiveDataclass):
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
     path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
     transform: TransformsNameValue = field(default_factory=dict)
 
 
 @dataclass
-class ExtractDatasetConfig:
+class ExtractDatasetConfig(RecursiveDataclass):
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
     train_path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
     check_path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
@@ -118,28 +136,28 @@ class ExtractDatasetConfig:
 
 # Actually Use dataclasses
 @dataclass
-class TrainAutoencoderConfig:
+class TrainAutoencoderConfig(RecursiveDataclass):
     model: AutoencoderModelConfig = AutoencoderModelConfig()
     train: TrainConfig = TrainConfig()
     dataset: TrainDatasetConfig = TrainDatasetConfig()
 
 
 @dataclass
-class TrainMAEViTConfig:
+class TrainMAEViTConfig(RecursiveDataclass):
     model: MAEViTModelConfig = MAEViTModelConfig()
     train: TrainConfig = TrainConfig()
     dataset: TrainDatasetConfig = TrainDatasetConfig()
 
 
 @dataclass
-class ExtractConfig:
+class ExtractConfig(RecursiveDataclass):
     model: AutoencoderModelConfig = AutoencoderModelConfig()
     train: TrainConfig = TrainConfig()
     dataset: ExtractDatasetConfig = ExtractDatasetConfig()
     feature_save_path: str = "${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}"
 
 
-def dict2dataclass(cls: Type[_DataclassT], src: dict) -> _DataclassT:
+def dict2dataclass(cls: Type[DataClassT], src: dict) -> DataClassT:
     kwargs = dict()
     field_dict: dict[str, Field] = {fld.name: fld for fld in fields(cls)}
     field_type_dict: dict[str, type] = get_type_hints(cls)
@@ -148,15 +166,17 @@ def dict2dataclass(cls: Type[_DataclassT], src: dict) -> _DataclassT:
         fld = field_dict[src_key]
         field_type = field_type_dict[fld.name]
         if is_dataclass(field_type):
-            kwargs[src_key] = dict2dataclass(field_type, src_value)
+            kwargs[src_key] = dict2dataclass(
+                field_type, src_value
+            )  # type: ignore
         else:
             kwargs[src_key] = src_value
     return cls(**kwargs)
 
 
 def dictconfig2dataclass(
-    cfg: DictConfig, dataclass_cfg_cls: Type[_DataclassT]
-) -> _DataclassT:
+    cfg: DictConfig, dataclass_cfg_cls: Type[DataClassT]
+) -> DataClassT:
     dictconfig = OmegaConf.to_container(cfg, resolve=True)
     if isinstance(dictconfig, dict):
         config = dict2dataclass(dataclass_cfg_cls, dictconfig)
@@ -167,14 +187,12 @@ def dictconfig2dataclass(
 
 @hydra.main(version_base=None, config_path="train_conf", config_name="MAEViT")
 def main(cfg: DictConfig) -> None:
-    print("In main: ", os.getcwd())
+    print("In main: ", Path.cwd())
     print(f"{type(cfg)=}")
-    print(OmegaConf.to_container(cfg))
-    dataclass_cfg = dictconfig2dataclass(cfg, TrainMAEViTConfig)
-    print(type(dataclass_cfg))
-    print(asdict(dataclass_cfg))
+    pprint(cfg.train)
+    pprint(OmegaConf.to_container(cfg), sort_dicts=False)
+    pprint(TrainMAEViTConfig.from_dictconfig(cfg))
 
 
 if __name__ == "__main__":
-    print("In if __name__: ", os.getcwd())
     main()

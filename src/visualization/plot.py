@@ -41,45 +41,45 @@ def scatter_each_classes(
     ax.set_axisbelow(True)
 
     if isinstance(colors, matplotlib.colors.LinearSegmentedColormap):
-        for l, r in zip(labels, rank):
-            if (face_color == "None") and (markers[l] != "x"):
+        for label, r in zip(labels, rank):
+            if (face_color == "None") and (markers[label] != "x"):
                 ax.scatter(
-                    data[class_labels == l, 0],
-                    data[class_labels == l, 1],
-                    edgecolors=colors[l],
-                    label=f"cluster {l}",
-                    marker=markers[l],
+                    data[class_labels == label, 0],
+                    data[class_labels == label, 1],
+                    edgecolors=colors[label],
+                    label=f"cluster {label}",
+                    marker=markers[label],
                     facecolor="None",
                     zorder=r,
                 )
             else:
                 ax.scatter(
-                    data[class_labels == l, 0],
-                    data[class_labels == l, 1],
-                    color=colors[l],
-                    label=f"cluster {l}",
-                    marker=markers[l],
+                    data[class_labels == label, 0],
+                    data[class_labels == label, 1],
+                    color=colors[label],
+                    label=f"cluster {label}",
+                    marker=markers[label],
                     zorder=r,
                 )
     else:
-        for l, r in zip(labels, rank):
-            if (face_color == "None") and (markers[l] != "x"):
+        for label, r in zip(labels, rank):
+            if (face_color == "None") and (markers[label] != "x"):
                 ax.scatter(
-                    data[class_labels == l, 0],
-                    data[class_labels == l, 1],
-                    label=f"cluster {l}",
-                    marker=markers[l],
-                    edgecolors=colors[l],
+                    data[class_labels == label, 0],
+                    data[class_labels == label, 1],
+                    label=f"cluster {label}",
+                    marker=markers[label],
+                    edgecolors=colors[label],
                     facecolor="None",
                     zorder=r,
                 )
             else:
                 ax.scatter(
-                    data[class_labels == l, 0],
-                    data[class_labels == l, 1],
-                    color=colors[l],
-                    label=f"cluster {l}",
-                    marker=markers[l],
+                    data[class_labels == label, 0],
+                    data[class_labels == label, 1],
+                    color=colors[label],
+                    label=f"cluster {label}",
+                    marker=markers[label],
                     zorder=r,
                 )
 
@@ -116,10 +116,10 @@ def concat_images(
     w, h = imgs[0].size
     w_with_pad = w + padding
     h_with_pad = h + padding
-    W = (w_with_pad) * n_col + padding
-    H = (h_with_pad) * n_row + padding
+    width = (w_with_pad) * n_col + padding
+    height = (h_with_pad) * n_row + padding
 
-    dst = Image.new("L", (W, H))
+    dst = Image.new("L", (width, height))
     iter_imgs = iter(imgs)
     for j in range(n_row):
         for i in range(n_col):
@@ -143,9 +143,9 @@ def image_concat_and_imshow(
     concat_imgs: list[Image.Image] = []
     num_labels = len(np.unique(labels))
 
-    for l in np.unique(labels):
+    for label in np.unique(labels):
         imgs: list[Image.Image] = []
-        data_using_img_load = df.filter(pl.col("cluster") == l).sample(
+        data_using_img_load = df.filter(pl.col("cluster") == label).sample(
             col_row[0] * col_row[1]
         )
         used_filepaths.append(
@@ -159,7 +159,6 @@ def image_concat_and_imshow(
         concat_imgs.append(concat_images(imgs, col_row[0], col_row[1], 2))
 
     fig = plt.figure(figsize=(5, 4))
-    # fig.subplots_adjust(hspace=0.0, wspace=0.4)
 
     for i in range(num_labels):
         ax = fig.add_subplot(2, 5, i + 1)
@@ -167,7 +166,6 @@ def image_concat_and_imshow(
         ax.set_title(f"cluster {i}")
         ax.axis("off")
 
-    # fig.tight_layout()
     plt.show()
 
     return concat_imgs, pl.concat(used_filepaths)

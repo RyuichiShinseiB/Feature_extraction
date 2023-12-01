@@ -1,5 +1,4 @@
 # Standard Library
-import os
 from pathlib import Path
 
 # Third Party Library
@@ -54,15 +53,16 @@ def crop_image(
     return cropped_images, positions
 
 
-crop_size = (128, 128)
-stride = 64
+crop_size = (16, 16)
+stride = 8
 original_image_dir = Path(
-    "/home/shinsei/MyResearchs/feat_extrc/"
+    "/home/shinsei/MyResearches/feat_extrc/"
     "data/interim/CNTForest"
     "/exp1-9_dataset_1280x960"
 )
 save_image_dir = Path(
-    "/home/shinsei/MyResearchs/feat_extrc/"
+    "/home/shinsei/MyResearches/feat_extrc/"
+    # f"data/processed/check/CNTForest/cnt_sem_for_check_{crop_size[0]}x{crop_size[1]}"
     f"data/processed/CNTForest/cnt_sem_{crop_size[0]}x{crop_size[1]}"
 )
 
@@ -72,6 +72,8 @@ if not save_image_dir.parent.exists():
     raise FileNotFoundError(f"Can not found File: {save_image_dir.parent}")
 
 for mag in original_image_dir.iterdir():
+    if not mag.is_dir():
+        continue
     print(mag.name)
     for sample in mag.iterdir():
         print(sample.name)
@@ -82,7 +84,7 @@ for mag in original_image_dir.iterdir():
             for cropped_image, position in zip(cropped_images, positions):
                 save_dir = save_image_dir / mag.name / sample.name
                 if not save_dir.exists():
-                    os.makedirs(save_dir)
+                    Path.mkdir(save_dir, parents=True)
                     print("Made Path: ", save_dir)
                 save_name = f"{mag.name}_{sample.name}_{position}.png"
                 cropped_image.save(save_dir / save_name)

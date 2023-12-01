@@ -13,7 +13,7 @@ model:
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
-    lr: 5e-4
+    lr: 1e-3
     epochs: 100
     batch_size: 128
     reconst_loss: bce

@@ -8,10 +8,9 @@ import polars as pl
 import torch
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader
-from torchinfo import summary
 
 # First Party Library
-from src.configs.model_configs import ExtractConfig, dictconfig2dataclass
+from src.configs.model_configs import ExtractConfig
 from src.predefined_models import model_define
 from src.utilities import extract_features, get_dataloader
 
@@ -22,15 +21,13 @@ from src.utilities import extract_features, get_dataloader
     config_name="autoencoder",
 )
 def main(_cfg: DictConfig) -> None:
-    cfg = dictconfig2dataclass(_cfg, ExtractConfig)
+    cfg = ExtractConfig.from_dictconfig(_cfg)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # 抽出した特徴量の保存先
     base_save_path = Path(cfg.train.trained_save_path)
     model_save_path = "./models" / base_save_path / "model_parameters.pth"
-    feature_storing_path = "./reports/features" / Path(
-        cfg.train.trained_save_path
-    )
+    feature_storing_path = "./reports/features" / base_save_path
 
     # 事前学習済みのモデルのロード
     # Load pretrained model

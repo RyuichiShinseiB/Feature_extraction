@@ -27,12 +27,14 @@ class Encoder(nn.Module):
             Number of input image channels, by default 1\n
         encoder_base_channels : int, optional
             Basic number of channels in the encoder block.
-            With each layer, the number of channels in each layer increases by a factor of 2. , by default 64\n
+            With each layer, the number of channels in each layer increases
+            by a factor of 2. , by default 64\n
         latent_dimensions : int, optional
             Number dimension of feature vector, by default 10\n
         activation : ActivationName, optional
             Activation function at each layer.
-            Please select in `relu`, `leakyrelu`, `selu`, `sigmoid`, `tanh`, `identity`, by default "relu"\n
+            Please select in `relu`, `leakyrelu`, `selu`, `sigmoid`, `tanh`,
+            `identity`, by default "relu"\n
         output_activation : ActivationName, optional
             Activation function at output layer of decoder, by default "relu"\n
         device : Device, optional
@@ -41,7 +43,7 @@ class Encoder(nn.Module):
         super().__init__()
         self.device = device
         # (B, C, 16, 16) -> (B, ebc, 8, 8)
-        # ebc: encoder_base_channels
+        # ebc is encoder_base_channels
         self.l1 = nn.Sequential(
             nn.Conv2d(
                 input_channels, encoder_base_channels, 4, 2, 1, bias=False
@@ -76,7 +78,7 @@ class Encoder(nn.Module):
             add_activation(activation),
         )
         # (B, ebc * 4, 2, 2) -> (B, ld, 1, 1)
-        # ld: latent_dimension
+        # ld is latent_dimension
         self.l4 = nn.Sequential(
             nn.Conv2d(
                 encoder_base_channels * 4,
@@ -118,12 +120,14 @@ class Decoder(nn.Module):
             Number of input image channels, by default 1\n
         decoder_base_channels : int, optional
             Basic number of channels in the decoder block.
-            With each layer, the number of channels in each layer decreases by a factor of 2. , by default 64\n
+            With each layer, the number of channels in each layer decreases
+            by a factor of 2. , by default 64\n
         latent_dimensions : int, optional
             Number dimension of feature vector, by default 10\n
         activation : ActivationName, optional
             Activation function at each layer.
-            Please select in `relu`, `leakyrelu`, `selu`, `sigmoid`, `tanh`, `identity`, by default "relu"\n
+            Please select in `relu`, `leakyrelu`, `selu`, `sigmoid`, `tanh`,
+            `identity`, by default "relu"\n
         output_activation : ActivationName, optional
             Activation function at output layer of decoder, by default "relu"\n
         device : Device, optional
@@ -132,7 +136,7 @@ class Decoder(nn.Module):
         super().__init__()
         self.device = device
         # (B, ld, 1, 1) -> (B, dbc * 4, 2, 2)
-        # dbc: decoder_base_channels
+        # dbc is decoder_base_channels
         self.l1 = nn.Sequential(
             nn.ConvTranspose2d(
                 latent_dimensions,
@@ -216,18 +220,22 @@ class SimpleCAE16(nn.Module):
             Number dimension of feature vector, by default 10\n
         encoder_base_channels : int
             Basic number of channels in the encoder block.
-            With each layer, the number of channels in each layer increases by a factor of 2. , by default 64\n
+            With each layer, the number of channels in each layer increases
+            by a factor of 2. , by default 64\n
         decoder_base_channels : int
             Basic number of channels in the decoder block.
-            With each layer, the number of channels in each layer decreases by a factor of 2. , by default 64\n
+            With each layer, the number of channels in each layer decreases by
+            a factor of 2. , by default 64\n
         encoder_activation : ActivationName, optional
             Activation function at the encoder block, by default "relu"\n
         decoder_activation : ActivationName, optional
             Activation function at the decoder block, by default "relu"\n
         encoder_output_activation : ActivationName, optional
-            Activation function at output of the encoder block, by default "selu"\n
+            Activation function at output of the encoder block,
+            by default "selu"\n
         decoder_output_activation : ActivationName, optional
-            Activation function at output of the decoder block, by default "sigmoid"\n
+            Activation function at output of the decoder block,
+            by default "sigmoid"\n
         device : Device, optional
             Device to place decoder., by default "cpu"\n
         """

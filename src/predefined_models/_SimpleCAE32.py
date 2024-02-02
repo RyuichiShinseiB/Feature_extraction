@@ -207,6 +207,8 @@ if __name__ == "__main__":
     # Third Party Library
     from torchinfo import summary
 
-    model = SimpleCAE32(1, 64, 64, 64, device="cuda")
+    model = SimpleCAE32(
+        1, 128, 64, 64, "selu", "selu", "selu", "sigmoid", device="cuda"
+    )
 
-    summary(model, (64, 1, 32, 32))
+    summary(model, (1, 1, 32, 32))

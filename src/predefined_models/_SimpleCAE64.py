@@ -5,6 +5,9 @@ from torch import nn
 from .. import ActivationName, Device, Tensor
 from ._CNN_modules import add_activation
 
+# from src import ActivationName, Device, Tensor
+# from src.predefined_models._CNN_modules import add_activation
+
 
 class Encoder(nn.Module):
     def __init__(
@@ -232,6 +235,8 @@ if __name__ == "__main__":
     # Third Party Library
     from torchinfo import summary
 
-    model = SimpleCAE64(1, 16, 16, 10, device="cuda")
+    model = SimpleCAE64(
+        1, 128, 64, 64, "selu", "selu", "selu", "sigmoid", device="cuda"
+    )
 
     summary(model, (1, 1, 64, 64))

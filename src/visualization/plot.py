@@ -123,7 +123,11 @@ def concat_images(
     iter_imgs = iter(imgs)
     for j in range(n_row):
         for i in range(n_col):
-            img = next(iter_imgs)
+            try:
+                img = next(iter_imgs)
+            except Exception:
+                img = Image.new("L", img.size, color=255)
+
             dst.paste(
                 img, (padding + w_with_pad * i, padding + h_with_pad * j)
             )
@@ -135,6 +139,7 @@ def image_concat_and_imshow(
     labels: list[int] | np.ndarray,
     col_row: tuple[int, int],
     image_root: str | Path,
+    figsize: tuple[float, float] | None = None,
 ) -> tuple[list[Image.Image], pl.DataFrame]:
     if not isinstance(image_root, Path):
         image_root = Path(image_root)
@@ -145,9 +150,15 @@ def image_concat_and_imshow(
 
     for label in np.unique(labels):
         imgs: list[Image.Image] = []
-        data_using_img_load = df.filter(pl.col("cluster") == label).sample(
-            col_row[0] * col_row[1]
-        )
+        hoge = df.filter(pl.col("cluster") == label)
+
+        if len(hoge) > col_row[0] * col_row[1]:
+            data_using_img_load = hoge.sample(col_row[0] * col_row[1])
+        else:
+            data_using_img_load = hoge
+        # data_using_img_load = df.filter(pl.col("cluster") == label).sample(
+        #     col_row[0] * col_row[1]
+        # )
         used_filepaths.append(
             data_using_img_load.select(["filepath", "cluster"])
         )
@@ -158,7 +169,7 @@ def image_concat_and_imshow(
             imgs.append(Image.open(image_root / p))
         concat_imgs.append(concat_images(imgs, col_row[0], col_row[1], 2))
 
-    fig = plt.figure(figsize=(5, 4))
+    fig = plt.figure(figsize=None if figsize is None else figsize)
 
     for i in range(num_labels):
         ax = fig.add_subplot(2, 5, i + 1)

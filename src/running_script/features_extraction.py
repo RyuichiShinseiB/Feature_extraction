@@ -1,13 +1,11 @@
 # Standard Library
 from pathlib import Path
-from typing import cast
 
 # Third Party Library
 import hydra
 import polars as pl
 import torch
 from omegaconf import DictConfig
-from torch.utils.data import DataLoader
 
 # First Party Library
 from src.configs.model_configs import ExtractConfig
@@ -28,6 +26,7 @@ def main(_cfg: DictConfig) -> None:
     base_save_path = Path(cfg.train.trained_save_path)
     model_save_path = "./models" / base_save_path / "model_parameters.pth"
     feature_storing_path = "./reports/features" / base_save_path
+    print(f"Path to store features {feature_storing_path}")
 
     # 事前学習済みのモデルのロード
     # Load pretrained model
@@ -35,19 +34,18 @@ def main(_cfg: DictConfig) -> None:
     model.load_state_dict(torch.load(model_save_path))
 
     # データローダーを設定
-    # extraction=Trueにすることで、データだけでなくデータのファイル名とディレクトリ名も取得
+    # extraction=Trueにすることで、特徴量、ディレクトリ名、ファイル名を取得
     # 訓練用データでの特徴量抽出
     dataloader = get_dataloader(
-        cfg.dataset.train_path,
-        cfg.dataset.transform,
-        cfg.train.train_hyperparameter.batch_size,
+        dataset_path=cfg.dataset.train_path,
+        dataset_transform=cfg.dataset.transform,
+        batch_size=cfg.train.train_hyperparameter.batch_size,
         shuffle=False,
         generator_seed=None,
         extraction=True,
     )
-    features, dirnames, filenames = extract_features(
-        model, cast(DataLoader, dataloader), device
-    )
+    print("Extraction from training data...")
+    features, dirnames, filenames = extract_features(model, dataloader, device)
     df = pl.DataFrame(features).select(
         [
             pl.all(),
@@ -62,16 +60,15 @@ def main(_cfg: DictConfig) -> None:
 
     # 確認用データでの特徴量抽出
     dataloader = get_dataloader(
-        cfg.dataset.check_path,
-        cfg.dataset.transform,
-        cfg.train.train_hyperparameter.batch_size,
+        dataset_path=cfg.dataset.check_path,
+        dataset_transform=cfg.dataset.transform,
+        batch_size=cfg.train.train_hyperparameter.batch_size,
         shuffle=False,
         generator_seed=None,
         extraction=True,
     )
-    features, dirnames, filenames = extract_features(
-        model, cast(DataLoader, dataloader), device
-    )
+    print("Extraction from checking data...")
+    features, dirnames, filenames = extract_features(model, dataloader, device)
     df = pl.DataFrame(features).select(
         [
             pl.all(),

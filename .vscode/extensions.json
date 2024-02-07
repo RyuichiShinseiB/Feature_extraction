@@ -1,13 +1,13 @@
 {
     "recommendations": [
-        "ms-python.black-formatter",
-        "ms-python.flake8",
-        "ms-python.isort",
         "ms-python.python",
         "kevinrose.vsc-python-indent",
         "oderwat.indent-rainbow",
         "christian-kohler.path-intellisense",
         "njpwerner.autodocstring",
-        "streetsidesoftware.code-spell-checker"
+        "streetsidesoftware.code-spell-checker",
+        "tamasfe.even-better-toml",
+        "ms-python.mypy-type-checker",
+        "charliermarsh.ruff"
     ]
 }

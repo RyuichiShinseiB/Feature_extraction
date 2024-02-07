@@ -7,52 +7,41 @@
     "[python]": {
         "editor.tabSize": 4,
         "editor.formatOnSave": true,
-        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        }
     },
 
     // 自作パッケージなどを扱いたい場合はこれをやっておくと確実
     "python.analysis.extraPaths": [
-        "${workspaceFolder}./src"
+        "${workspaceFolder}/src"
     ],
     // poetryで作った仮想環境のpythonインタープリタを確実に選ばれるように
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
 
-    // blackの設定
-    "black-formatter.path": [
-        "${workspaceFolder}/.venv/bin/black"
-    ],
-
-    // isortの設定
-    "isort.path": [
-        "${workspaceFolder}/.venv/bin/isort",
-    ],
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": "explicit"
-    },
-
-    // flake8の設定
-    // "python.linting.pylintEnabled": false,
-    // "python.linting.flake8Enabled": true,
-    "flake8.args": [
-        "--ignore=E203, W503",
-    // E203: ":"の前の空白を入れないルール
-    // W503: 演算子の前に改行しないようにするルール
-    "--max-complexity=10",
-    ],
-    "flake8.path": [
-        "${workspaceFolder}/.venv/bin/flake8"
-    ],
-
     // mypyの設定
-    // "python.linting.mypyEnabled": true,
-    // "python.linting.mypyPath": "${workspaceFolder}/.venv/bin/mypy",
     "mypy-type-checker.path": [
         "${workspaceFolder}/.venv/bin/mypy"
     ],
     "python.analysis.typeCheckingMode": "off",
 
+    // ruff の設定
+    "ruff.path": [
+        "${workspaceFolder}/.venv/bin/ruff"
+    ],
+    "ruff.lint.args": [
+        "--config=${workspaceFolder}/pyproject.toml"
+    ],
+    "ruff.format.args": [
+        "--config=${workspaceFolder}/pyproject.toml"
+    ],
+    "ruff.organizeImports": true,
+
     // docstring のスタイル お好きに
     "autoDocstring.docstringFormat": "numpy",
+
     "cSpell.words": [
         "arange",
         "argmax",

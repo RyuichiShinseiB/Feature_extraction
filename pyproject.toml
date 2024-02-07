@@ -27,23 +27,14 @@ opencv-python = "^4.8.0.74"
 optuna = "^3.4.0"
 umap-learn = "^0.5.4"
 omegaconf = "^2.3.0"
+onnx = "^1.15.0"
 
 
 
 [tool.poetry.group.dev.dependencies]
-flake8 = "^6.0.0"
-pyproject-flake8 = "^6.0.0.post1"
-flake8-isort = "^6.0.0"
-flake8-bugbear = "^23.6.5"
-flake8-builtins = "^2.1.0"
-flake8-eradicate = "^1.5.0"
-flake8-unused-arguments = "^0.0.13"
-flake8-pytest-style = "^1.7.2"
-pep8-naming = "^0.13.3"
 mypy = "^1.4.0"
-black = "^23.3.0"
-isort = "^5.12.0"
 types-pillow = "^10.1.0.2"
+ruff = "^0.2.1"
 
 
 [[tool.poetry.source]]
@@ -75,26 +66,35 @@ warn_unused_ignores = true
 # 冗長なキャストに警告
 warn_redundant_casts = true
 
-[tool.black]
+[tool.ruff]
+exclude = [
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".git",
+]
 line-length = 79
+indent-width = 4
 
-[tool.isort]
-profile = "black"
-line_length = 79
-# 各ライブラリ群の説明を追記する
-import_heading_stdlib      = "Standard Library"
-import_heading_thirdparty  = "Third Party Library"
-import_heading_firstparty  = "First Party Library"
-import_heading_localfolder = "Local Library"
-# from third_party import lib1, lib2...のような記述時の改行方法の設定(https://pycqa.github.io/isort/docs/configuration/multi_line_output_modes.html)
-multi_line_output = 3
-# 最後の要素の末尾に","を付けるようにする設定
-include_trailing_comma = true
+[tool.ruff.lint]
+select = [
+    "C",
+    "E",
+    "F",
+    "ARG",
+    "I",
+    "W",
+]
+ignore = [
 
-[tool.flake8]
-max-line-length = 79
-# E203: ":"の前の空白を入れないルール
-# W503: 演算子の前に改行しないようにするルール
-extend-ignore = ["E203", "W503"]
-exclude = [".venv", ".git", "__pycache__",]
+]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint.mccabe]
 max-complexity = 10

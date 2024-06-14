@@ -1,18 +1,21 @@
 # Standard Library
 from dataclasses import asdict
+from io import BytesIO
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable, Optional, TypeAlias, cast
+from typing import Any, Callable, Optional, TypeAlias, cast, overload
 
 # Third Party Library
 import numpy as np
 import torch
+import torch.onnx as onnx
 from omegaconf import DictConfig, OmegaConf
 from torch import nn
 from torch.utils.data import DataLoader, Subset, random_split
 from torchvision.datasets import ImageFolder, VisionDataset
 from torchvision.datasets.folder import find_classes, make_dataset, pil_loader
 from torchvision.transforms import transforms
+from tqdm import tqdm
 
 # Local Library
 from . import (
@@ -65,12 +68,52 @@ def weight_init(m: Any) -> None:
             torch.nn.init.zeros_(m.bias.data)
 
 
+@overload
 def get_dataloader(
     dataset_path: str,
     dataset_transform: TransformsNameValue,
+    *,
     batch_size: int = 64,
     shuffle: bool = True,
+    generator_seed: int | None = 42,
+    extraction: bool = False,
+) -> DataLoader:
+    ...
+
+
+@overload
+def get_dataloader(
+    dataset_path: str,
+    dataset_transform: TransformsNameValue,
+    split_ratio: tuple[float, float],
+    *,
+    batch_size: int = 64,
+    shuffle: bool = True,
+    generator_seed: int | None = 42,
+    extraction: bool = False,
+) -> tuple[DataLoader, DataLoader]:
+    ...
+
+
+@overload
+def get_dataloader(
+    dataset_path: str,
+    dataset_transform: TransformsNameValue,
     split_ratio: tuple[float, float] | None = None,
+    batch_size: int = 64,
+    shuffle: bool = True,
+    generator_seed: int | None = 42,
+    extraction: bool = False,
+) -> tuple[DataLoader, DataLoader] | DataLoader:
+    ...
+
+
+def get_dataloader(
+    dataset_path: str,
+    dataset_transform: TransformsNameValue,
+    split_ratio: tuple[float, float] | None = None,
+    batch_size: int = 64,
+    shuffle: bool = True,
     generator_seed: int | None = 42,
     extraction: bool = False,
 ) -> tuple[DataLoader, DataLoader] | DataLoader:
@@ -104,7 +147,9 @@ def get_dataloader(
     else:
         dataset = ImageFolder(dataset_path, transform)
 
-    if split_ratio is not None:
+    if split_ratio is None:
+        return DataLoader(dataset, batch_size, shuffle, num_workers=2)
+    else:
         splitted_dataset: list[
             Subset[ForExtractFolder | ImageFolder]
         ] = random_split(
@@ -122,8 +167,6 @@ def get_dataloader(
                 splitted_dataset[1], batch_size, shuffle, num_workers=2
             ),
         )
-    else:
-        return DataLoader(dataset, batch_size, shuffle, num_workers=2)
 
 
 def str2transform(
@@ -187,6 +230,22 @@ def display_cfg(
         print(OmegaConf.to_yaml(cfg))
 
 
+def save_onnx(
+    model: Model, input_size: tuple[int, ...], path: str | Path | BytesIO
+) -> None:
+    model.eval()
+
+    dummy_shape = [1] + list(input_size)
+    dummy_input = torch.randn(dummy_shape, requires_grad=True)
+
+    onnx.export(
+        model,
+        dummy_input,
+        path,
+        export_params=True,
+    )
+
+
 def extract_features(
     model: Model, dataloader: DataLoader["ForExtractFolder"], device: Device
 ) -> tuple[FeatureArray, DirList, FileNameList]:
@@ -195,7 +254,7 @@ def extract_features(
     filenames_list: list[str] = []
     model.eval()
     with torch.no_grad():
-        for x, _, dirnames, filenames in dataloader:
+        for x, _, dirnames, filenames in tqdm(dataloader):
             _, features = model(x.to(device))
             if isinstance(features, tuple):
                 features = features[1]

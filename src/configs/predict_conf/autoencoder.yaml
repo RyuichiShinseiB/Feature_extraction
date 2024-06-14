@@ -1,18 +1,19 @@
 model:
-  # name: SimpleCAE64
-  name: SimpleCAE16
+  name: SimpleCAE64
+  # name: SimpleCAE16
   hyper_parameters:
     input_channels: 1
-    latent_dimensions: 128
+    latent_dimensions: 16
     encoder_base_channels: 64
     decoder_base_channels: 64
-    encoder_activation: selu
-    decoder_activation: selu
-    encoder_output_activation: selu
+    encoder_activation: relu
+    decoder_activation: relu
+    encoder_output_activation: relu
     decoder_output_activation: sigmoid
 train:
   # trained_save_path: SimpleCAE64/2023-01-31/12-54-00
-  trained_save_path: ${model.name}/2023-11-27/12-07-16
+  # trained_save_path: ${model.name}/2023-11-27/12-07-16
+  trained_save_path: ${model.name}/2024-02-06/16-17-13
   train_hyperparameter:
     lr: 0.001
     epochs: 100
@@ -23,8 +24,8 @@ train:
     early_stopping: true
 dataset:
   image_target: CNTForest
-  train_path: data/processed/CNTForest/cnt_sem_16x16/10k
-  check_path: data/processed/check/CNTForest/cnt_sem_for_check_16x16/10k
+  train_path: data/processed/CNTForest/cnt_sem_64x64/10k
+  check_path: data/processed/check/CNTForest/cnt_sem_for_check_64x64/10k
   transform:
     Grayscale: 1
     RandomHorizontalFlip: 0.5

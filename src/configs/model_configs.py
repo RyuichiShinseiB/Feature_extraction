@@ -33,7 +33,9 @@ class RecursiveDataclass:
         }
         field_type_dict: dict[str, type] = get_type_hints(cls)
         for src_key, src_value in src.items():
-            assert src_key in field_dict, "Invalid Data Structure"
+            assert (
+                src_key in field_dict
+            ), f"Invalid Data Structure: {src_key} in {cls}"
             fld = field_dict[src_key]
             field_type = field_type_dict[fld.name]
             if _is_recursivedataclass(field_type):
@@ -166,9 +168,7 @@ def dict2dataclass(cls: Type[DataClassT], src: dict) -> DataClassT:
         fld = field_dict[src_key]
         field_type = field_type_dict[fld.name]
         if is_dataclass(field_type):
-            kwargs[src_key] = dict2dataclass(
-                field_type, src_value
-            )  # type: ignore
+            kwargs[src_key] = dict2dataclass(field_type, src_value)  # type: ignore
         else:
             kwargs[src_key] = src_value
     return cls(**kwargs)

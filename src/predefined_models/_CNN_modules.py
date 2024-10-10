@@ -6,8 +6,7 @@ import torch
 import torch.nn.functional as nn_func
 from torch import nn
 
-# First Party Library
-from src import ActivationName, Tensor
+from src.mytyping import ActivationName, Tensor
 
 
 def conv2d3x3(in_ch: int, out_ch: int, stride: int = 1) -> nn.Conv2d:

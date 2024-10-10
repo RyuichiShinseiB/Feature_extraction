@@ -10,10 +10,14 @@ import torchvision.utils as vutils
 from omegaconf import DictConfig
 from torch import optim
 
-# First Party Library
-from src import Tensor
-from src.configs.model_configs import TrainConfig, dictconfig2dataclass
+from src.configs.model_configs import (
+    TrainAutoencoderConfig,
+    dictconfig2dataclass,
+)
 from src.loss_function import LossFunction, calc_loss
+
+# First Party Library
+from src.mytyping import Tensor
 from src.predefined_models import model_define
 from src.utilities import (
     EarlyStopping,
@@ -31,7 +35,7 @@ from src.utilities import (
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
     display_cfg(_cfg)
-    cfg = dictconfig2dataclass(_cfg, TrainConfig)
+    cfg = dictconfig2dataclass(_cfg, TrainAutoencoderConfig)
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先
     # Paths to store trained models and reconstructed images in training
@@ -64,7 +68,7 @@ def main(_cfg: DictConfig) -> None:
     early_stopping = EarlyStopping()
 
     # データローダーを設定
-    # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、
+    # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、  # noqa: E501
     # 訓練用と検証用のデータローダーを作製する。
     # generator_seedは、データセットを分割するときのseed値
     train_dataloader, val_dataloader = get_dataloader(

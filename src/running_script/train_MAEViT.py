@@ -10,10 +10,11 @@ import torchvision.utils as vutils
 from omegaconf import DictConfig
 from torch import optim
 
-# First Party Library
-from src import Tensor
 from src.configs.model_configs import TrainMAEViTConfig, dictconfig2dataclass
 from src.loss_function import LossFunction, calc_loss
+
+# First Party Library
+from src.mytyping import Tensor
 from src.predefined_models import model_define
 from src.utilities import (
     EarlyStopping,
@@ -64,7 +65,7 @@ def main(_cfg: DictConfig) -> None:
     early_stopping = EarlyStopping()
 
     # データローダーを設定
-    # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、
+    # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、  # noqa: E501
     # 訓練用と検証用のデータローダーを作製する。
     # generator_seedは、データセットを分割するときのseed値
     train_dataloader, val_dataloader = get_dataloader(

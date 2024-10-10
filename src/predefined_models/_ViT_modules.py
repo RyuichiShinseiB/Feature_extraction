@@ -4,7 +4,7 @@ import torch.nn.functional as nnf
 from torch import nn
 
 # First Party Library
-from src import Tensor
+from src.mytyping import Tensor
 
 
 class MultiHeadsSelfAttention(nn.Module):

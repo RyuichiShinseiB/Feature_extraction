@@ -9,7 +9,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 # First Party Library
-from src import ActivationName, ModelName, TransformsNameValue
+from src.mytyping import ActivationName, ModelName, TransformsNameValue
 
 
 def _is_recursivedataclass(obj: type) -> TypeGuard["RecursiveDataclass"]:
@@ -27,7 +27,7 @@ class RecursiveDataclass:
 
     @classmethod
     def from_dict(cls: Type[RecursiveDcT], src: dict) -> RecursiveDcT:
-        kwargs = dict()
+        kwargs: dict[str, "RecursiveDataclass"] = {}
         field_dict: dict[str, Field] = {
             field.name: field for field in fields(cls)
         }
@@ -160,7 +160,7 @@ class ExtractConfig(RecursiveDataclass):
 
 
 def dict2dataclass(cls: Type[DataClassT], src: dict) -> DataClassT:
-    kwargs = dict()
+    kwargs = {}
     field_dict: dict[str, Field] = {fld.name: fld for fld in fields(cls)}
     field_type_dict: dict[str, type] = get_type_hints(cls)
     for src_key, src_value in src.items():

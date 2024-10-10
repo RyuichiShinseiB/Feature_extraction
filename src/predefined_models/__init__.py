@@ -9,7 +9,7 @@ from omegaconf import DictConfig, OmegaConf
 from src.configs.model_configs import AutoencoderModelConfig, MAEViTModelConfig
 
 # Local Library
-from .. import Device, Model, ModelName
+from ..mytyping import Device, Model, ModelName
 from ._SECAE32 import SECAE32
 from ._SECAE64 import SECAE64
 from ._SEConvVAE64 import SECVAE64
@@ -32,11 +32,11 @@ def set_hyper_parameters(
         return OmegaConf.to_container(model_cfg.hyper_parameters)
     else:
         raise ValueError(
-            "model_cfg is not AutoencoderModelConfig, MAEViTModelConfig or DictConfig"
+            "model_cfg is not AutoencoderModelConfig, MAEViTModelConfig or DictConfig"  # noqa: E501
         )
 
 
-def model_define(
+def model_define(  # noqa: C901
     model_cfg: AutoencoderModelConfig | MAEViTModelConfig,
     device: Device = "cpu",
 ) -> Model:

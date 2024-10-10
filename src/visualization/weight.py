@@ -7,7 +7,7 @@ import torchvision.utils as vutils
 from matplotlib.figure import Figure
 from torch import nn
 
-from src import Model
+from src.mytyping import Model
 
 TiledParamsDict: TypeAlias = dict[str, dict[str, torch.Tensor]]
 

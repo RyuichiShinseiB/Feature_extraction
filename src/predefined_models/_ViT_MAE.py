@@ -2,8 +2,7 @@
 import torch
 from torch import nn
 
-# First Party Library
-from src import Tensor
+from src.mytyping import Tensor
 from src.predefined_models._ViT_modules import (
     Block,
     PatchEmbedding,

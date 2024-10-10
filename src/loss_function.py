@@ -5,7 +5,7 @@ from typing import Callable, Literal
 import torch
 
 # Local Library
-from . import Model, Tensor
+from .mytyping import Model, Tensor
 
 
 def torch_log(x: Tensor) -> Tensor:

@@ -74,9 +74,9 @@ def main(_cfg: DictConfig) -> None:
     train_dataloader, val_dataloader = get_dataloader(
         cfg.dataset.path,
         cfg.dataset.transform,
-        cfg.train.train_hyperparameter.batch_size,
-        shuffle=True,
         split_ratio=(0.8, 0.2),
+        batch_size=cfg.train.train_hyperparameter.batch_size,
+        shuffle=True,
         generator_seed=42,
     )
 
@@ -112,8 +112,8 @@ def main(_cfg: DictConfig) -> None:
             # 損失の計算
             loss, _ = calc_loss(
                 input_data=x,
-                reconst_loss=criterion.reconst,
-                latent_loss=criterion.latent,
+                reconst_loss=criterion.reconst_loss,
+                latent_loss=criterion.latent_loss,
                 model=model,
             )
 
@@ -132,8 +132,8 @@ def main(_cfg: DictConfig) -> None:
             x = x.to(device)
             loss, _ = calc_loss(
                 input_data=x,
-                reconst_loss=criterion.reconst,
-                latent_loss=criterion.latent,
+                reconst_loss=criterion.reconst_loss,
+                latent_loss=criterion.latent_loss,
                 model=model,
             )
 

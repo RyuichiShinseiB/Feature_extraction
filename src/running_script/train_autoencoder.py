@@ -71,9 +71,9 @@ def main(_cfg: DictConfig) -> None:
     train_dataloader, val_dataloader = get_dataloader(
         cfg.dataset.path,
         cfg.dataset.transform,
-        cfg.train.train_hyperparameter.batch_size,
-        shuffle=True,
         split_ratio=(0.8, 0.2),
+        batch_size=cfg.train.train_hyperparameter.batch_size,
+        shuffle=True,
         generator_seed=42,
     )
 

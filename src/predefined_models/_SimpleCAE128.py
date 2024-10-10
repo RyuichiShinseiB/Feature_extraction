@@ -2,7 +2,7 @@
 from torch import nn
 
 # Local Library
-from .. import ActivationName, Device, Tensor
+from ..mytyping import ActivationName, Device, Tensor
 from ._CNN_modules import add_activation
 
 

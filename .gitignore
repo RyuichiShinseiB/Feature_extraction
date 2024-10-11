@@ -97,3 +97,6 @@ data
 # Pretrained model parameters
 *pkl
 *pth
+
+# Pytest cache
+.pytest_cache/

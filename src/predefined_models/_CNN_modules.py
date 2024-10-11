@@ -141,16 +141,15 @@ class MyBasicBlock(nn.Module):
         super().__init__()
         if expansion is not None:
             self.expansion = expansion
-        self.conv1 = conv2d3x3(in_ch, out_ch, stride, next_feature_size)
-        self.bn1 = nn.BatchNorm2d(out_ch)
-        self.conv2 = conv2d3x3(out_ch, out_ch, stride, next_feature_size)
+        mid_ch = in_ch * self.expansion
+        self.conv1 = conv2d3x3(in_ch, mid_ch, stride, next_feature_size)
+        self.bn1 = nn.BatchNorm2d(mid_ch)
+        self.conv2 = conv2d3x3(mid_ch, out_ch, stride, next_feature_size)
         self.bn2 = nn.BatchNorm2d(out_ch)
-        if in_ch != out_ch * self.expansion:
+        if in_ch != out_ch:
             self.shortcut = nn.Sequential(
-                conv2d1x1(
-                    in_ch, out_ch * self.expansion, stride, next_feature_size
-                ),
-                nn.BatchNorm2d(out_ch * self.expansion),
+                conv2d1x1(in_ch, out_ch, stride, next_feature_size),
+                nn.BatchNorm2d(out_ch),
             )
         else:
             self.shortcut = nn.Sequential()
@@ -163,6 +162,8 @@ class MyBasicBlock(nn.Module):
 
         h = self.conv2(h)
         h = self.bn2(h)
+        print(f"x size is \n{x.shape}")
+        print(f"h size is \n{h.shape}")
 
         h += self.shortcut(x)
 
@@ -334,22 +335,20 @@ class ResNet(nn.Module):
     def __init__(
         self,
         block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
-        layers: list[int],
+        layers: tuple[int, int, int, int],
         in_ch: int = 1,
         out_ch: int = 1000,
-        width_per_group: int = 64,
         zero_init_residual: bool = False,
+        activation: ActivationName = "relu",
         norm_layer: Callable[..., nn.Module] | None = None,
     ) -> None:
         super().__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        self._norm_layer = norm_layer
 
         self.inplanes = 64
         self.dilation = 1
 
-        self.base_width = width_per_group
         self.conv1 = nn.Conv2d(
             in_ch,
             self.inplanes,
@@ -359,26 +358,31 @@ class ResNet(nn.Module):
             bias=False,
         )
         self.bn1 = norm_layer(self.inplanes)
-        self.relu = nn.ReLU(inplace=True)
+        self.actfunc = add_activation(activation)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer1 = self._make_layer(
+            block, 64, layers[0], activation=activation
+        )
         self.layer2 = self._make_layer(
             block,
             128,
             layers[1],
             stride=2,
+            activation=activation,
         )
         self.layer3 = self._make_layer(
             block,
             256,
             layers[2],
             stride=2,
+            activation=activation,
         )
         self.layer4 = self._make_layer(
             block,
             512,
             layers[3],
             stride=2,
+            activation=activation,
         )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, out_ch)
@@ -430,10 +434,9 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def _forward_impl(self, x: Tensor) -> Tensor:
-        # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
-        x = self.relu(x)
+        x = self.actfunc(x)
         x = self.maxpool(x)
 
         x = self.layer1(x)

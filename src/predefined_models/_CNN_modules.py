@@ -343,6 +343,7 @@ class ResNet(nn.Module):
         layers: tuple[int, int, int, int],
         in_ch: int = 1,
         out_ch: int = 1000,
+        inplanes: int = 64,
         zero_init_residual: bool = False,
         activation: ActivationName = "relu",
         norm_layer: Callable[..., nn.Module] | None = None,
@@ -351,7 +352,7 @@ class ResNet(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
 
-        self.inplanes = 64
+        self.inplanes = inplanes
         self.dilation = 1
 
         self.conv1 = nn.Conv2d(

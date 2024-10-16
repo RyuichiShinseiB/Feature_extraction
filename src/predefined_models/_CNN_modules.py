@@ -131,7 +131,7 @@ class MyBasicBlock(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        out_ch: int,
+        mid_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
         next_feature_size: Literal["down", "up"] = "down",
@@ -141,11 +141,14 @@ class MyBasicBlock(nn.Module):
         super().__init__()
         if expansion is not None:
             self.expansion = expansion
-        mid_ch = in_ch * self.expansion
+        out_ch = in_ch
         self.conv1 = conv2d3x3(in_ch, mid_ch, stride, next_feature_size)
         self.bn1 = nn.BatchNorm2d(mid_ch)
-        self.conv2 = conv2d3x3(mid_ch, out_ch, stride, next_feature_size)
+        self.conv2 = conv2d3x3(
+            mid_ch, out_ch, next_feature_size=next_feature_size
+        )
         self.bn2 = nn.BatchNorm2d(out_ch)
+
         if in_ch != out_ch:
             self.shortcut = nn.Sequential(
                 conv2d1x1(in_ch, out_ch, stride, next_feature_size),
@@ -162,8 +165,6 @@ class MyBasicBlock(nn.Module):
 
         h = self.conv2(h)
         h = self.bn2(h)
-        print(f"x size is \n{x.shape}")
-        print(f"h size is \n{h.shape}")
 
         h += self.shortcut(x)
 
@@ -177,7 +178,7 @@ class MyBottleneck(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        out_ch: int,
+        mid_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
         next_feature_size: Literal["down", "up"] = "down",
@@ -187,14 +188,18 @@ class MyBottleneck(nn.Module):
         super().__init__()
         if expansion is not None:
             self.expansion = expansion
-        mid_ch = in_ch * self.expansion
-        self.conv1 = conv2d1x1(in_ch, mid_ch, stride, next_feature_size)
+        out_ch = mid_ch * self.expansion
+        self.conv1 = conv2d1x1(
+            in_ch, mid_ch, next_feature_size=next_feature_size
+        )
         self.bn1 = nn.BatchNorm2d(mid_ch)
 
         self.conv2 = conv2d3x3(mid_ch, mid_ch, stride, next_feature_size)
         self.bn2 = nn.BatchNorm2d(mid_ch)
 
-        self.conv3 = conv2d1x1(mid_ch, out_ch, stride, next_feature_size)
+        self.conv3 = conv2d1x1(
+            mid_ch, out_ch, next_feature_size=next_feature_size
+        )
         self.bn3 = nn.BatchNorm2d(out_ch)
 
         self.activation = add_activation(activation)
@@ -302,13 +307,13 @@ class SEBottleneck(nn.Module):
         self.expansion = expansion
         mid_ch = in_ch * self.expansion
         self.residual = nn.Sequential(
-            conv2d1x1(in_ch, mid_ch, stride, next_feature_size),
+            conv2d1x1(in_ch, mid_ch, next_feature_size=next_feature_size),
             nn.BatchNorm2d(mid_ch),
             add_activation(activation),
             conv2d3x3(mid_ch, mid_ch, stride, next_feature_size),
             nn.BatchNorm2d(mid_ch),
             add_activation(activation),
-            conv2d1x1(mid_ch, out_ch, stride, next_feature_size),
+            conv2d1x1(mid_ch, out_ch, next_feature_size=next_feature_size),
             nn.BatchNorm2d(out_ch),
         )
 
@@ -425,9 +430,8 @@ class ResNet(nn.Module):
                 block(
                     self.inplanes,
                     planes,
-                    stride,
-                    activation,
-                    next_feature_size,
+                    activation=activation,
+                    next_feature_size=next_feature_size,
                 )
             )
 

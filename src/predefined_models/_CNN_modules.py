@@ -295,7 +295,7 @@ class SEBottleneck(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        out_ch: int,
+        mid_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
         next_feature_size: Literal["down", "up"] = "down",
@@ -305,7 +305,7 @@ class SEBottleneck(nn.Module):
     ) -> None:
         super().__init__()
         self.expansion = expansion
-        mid_ch = in_ch * self.expansion
+        out_ch = mid_ch * self.expansion
         self.residual = nn.Sequential(
             conv2d1x1(in_ch, mid_ch, next_feature_size=next_feature_size),
             nn.BatchNorm2d(mid_ch),
@@ -321,8 +321,8 @@ class SEBottleneck(nn.Module):
 
         if in_ch != out_ch:
             self.shortcut = nn.Sequential(
-                conv2d1x1(in_ch, in_ch * expansion, stride),
-                nn.BatchNorm2d(in_ch * expansion),
+                conv2d1x1(in_ch, out_ch, stride),
+                nn.BatchNorm2d(out_ch),
             )
         else:
             self.shortcut = nn.Sequential()

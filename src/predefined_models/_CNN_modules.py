@@ -188,7 +188,10 @@ class MyBottleneck(nn.Module):
         super().__init__()
         if expansion is not None:
             self.expansion = expansion
-        out_ch = mid_ch * self.expansion
+        if next_feature_size == "down":
+            out_ch = mid_ch * self.expansion
+        elif next_feature_size == "up":
+            out_ch = mid_ch // self.expansion
         self.conv1 = conv2d1x1(
             in_ch, mid_ch, next_feature_size=next_feature_size
         )
@@ -305,7 +308,10 @@ class SEBottleneck(nn.Module):
     ) -> None:
         super().__init__()
         self.expansion = expansion
-        out_ch = mid_ch * self.expansion
+        if next_feature_size == "down":
+            out_ch = mid_ch * self.expansion
+        elif next_feature_size == "up":
+            out_ch = mid_ch // self.expansion
         self.residual = nn.Sequential(
             conv2d1x1(in_ch, mid_ch, next_feature_size=next_feature_size),
             nn.BatchNorm2d(mid_ch),
@@ -457,3 +463,173 @@ class ResNet(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
+
+
+class ResNet_(nn.Module):
+    def __init__(
+        self,
+        block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
+        layers: tuple[int, int, int, int],
+        in_ch: int = 1,
+        out_ch: int = 1000,
+        inplanes: int = 64,
+        zero_init_residual: bool = False,
+        activation: ActivationName = "relu",
+        norm_layer: Callable[..., nn.Module] | None = None,
+        *,
+        reconstructed_size: tuple[int, int] = (64, 64),
+    ) -> None:
+        super().__init__()
+        if norm_layer is None:
+            norm_layer = nn.BatchNorm2d
+
+        self.inplanes = inplanes
+        self.dilation = 1
+        self.reconstructed_size = reconstructed_size
+
+        self.conv1_t = nn.ConvTranspose2d(
+            out_ch,
+            self.inplanes,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            bias=False,
+        )
+        self.bn1_t = norm_layer(self.inplanes)
+        self.actfunc = add_activation(activation)
+        self.maxunpool = nn.MaxUnpool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1_t = self._make_layer(
+            block, 64, layers[0], activation=activation, next_feature_size="up"
+        )
+        self.layer2_t = self._make_layer(
+            block,
+            128,
+            layers[1],
+            stride=2,
+            activation=activation,
+            next_feature_size="up",
+        )
+        self.layer3_t = self._make_layer(
+            block,
+            256,
+            layers[2],
+            stride=2,
+            activation=activation,
+            next_feature_size="up",
+        )
+        self.layer4_t = self._make_layer(
+            block,
+            512,
+            layers[3],
+            stride=2,
+            activation=activation,
+            next_feature_size="up",
+        )
+
+        before_avgpool_size = _calc_layers_output_size(
+            reconstructed_size,
+            # (conv1, maxpool, layer1, layer2, layer3, layer4)
+            kernel_size=(7, 3, 3, 3, 3, 3),
+            padding=(3, 1, 1, 1, 1, 1),
+            dilation=(1, 1, 1, 1, 1, 1),
+            stride=(2, 2, 1, 2, 2, 2),
+        )
+        self.avgpool_t = nn.UpsamplingNearest2d(before_avgpool_size)
+        self.fc = nn.Linear(in_ch, 512 * block.expansion)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(
+                    m.weight, mode="fan_out", nonlinearity="relu"
+                )
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+        # Zero-initialize the last BN in each residual branch,
+        # so that the residual branch starts with zeros, and each residual block behaves like an identity.  # noqa: E501
+        # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
+        if zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, MyBottleneck) and m.bn3.weight is not None:
+                    nn.init.constant_(m.bn3.weight, 0)
+                elif isinstance(m, MyBasicBlock) and m.bn2.weight is not None:
+                    nn.init.constant_(m.bn2.weight, 0)
+
+    def _make_layer(
+        self,
+        block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
+        planes: int,
+        num_blocks: int,
+        stride: int = 1,
+        activation: ActivationName = "relu",
+        next_feature_size: Literal["down", "up"] = "down",
+    ) -> nn.Sequential:
+        layers = []
+        layers.append(
+            block(self.inplanes, planes, stride, activation, next_feature_size)
+        )
+        self.inplanes = planes * block.expansion
+        for _ in range(1, num_blocks):
+            layers.append(
+                block(
+                    self.inplanes,
+                    planes,
+                    activation=activation,
+                    next_feature_size=next_feature_size,
+                )
+            )
+
+        return nn.Sequential(*layers)
+
+    def _forward_impl(self, x: Tensor) -> Tensor:
+        x = self.fc(x)
+        x = self.actfunc(x)
+        x = self.avgpool_t(x.view(x.shape[0], -1, 1, 1))
+
+        x = self.layer4_t(x)
+        x = self.layer3_t(x)
+        x = self.layer2_t(x)
+        x = self.layer1_t(x)
+
+        x = self.maxunpool(x)
+        x = self.actfunc(x)
+        x = self.bn1_t(x)
+        x = self.conv1_t(x)
+        # x = self.conv1(x)
+        # x = self.bn1(x)
+        # x = self.actfunc(x)
+        # x = self.maxpool(x)
+
+        # x = self.layer1(x)
+        # x = self.layer2(x)
+        # x = self.layer3(x)
+        # x = self.layer4(x)
+
+        # x = self.avgpool(x)
+        # x = torch.flatten(x, 1)
+        # x = self.fc(x)
+
+        return x
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self._forward_impl(x)
+
+
+def _calc_layers_output_size(
+    size: tuple[int, int] | int,
+    kernel_size: tuple[tuple[int, int] | int, ...],
+    padding: tuple[tuple[int, int] | int, ...],
+    dilation: tuple[tuple[int, int] | int, ...],
+    stride: tuple[tuple[int, int] | int, ...],
+) -> tuple[int, int]:
+    _size = torch.tensor(size)
+    _kernel_size = torch.tensor(kernel_size)
+    _padding = torch.tensor(padding)
+    _dilation = torch.tensor(dilation)
+    _stride = torch.tensor(stride)
+    for k, p, d, s in zip(_kernel_size, _padding, _dilation, _stride):
+        _tempsize = (_size + 2 * p - d * (k - 1) - 1) / s + 1
+        _size = torch.floor(_tempsize)
+
+    return (int(_size[0].item()), int(_size[1].item()))

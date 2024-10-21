@@ -3,7 +3,15 @@ from dataclasses import asdict
 from io import BytesIO
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable, Optional, TypeAlias, cast, overload
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    TypeAlias,
+    TypeGuard,
+    cast,
+    overload,
+)
 
 # Third Party Library
 import hydra
@@ -284,6 +292,28 @@ def extract_features(
     features_array = np.array(features_list)
 
     return features_array, dirnames_list, filenames_list
+
+
+def is_tuple_of_pairs(
+    value: tuple[tuple[int, int] | int, ...],
+) -> TypeGuard[tuple[tuple[int, int], ...]]:
+    if not isinstance(value, tuple):
+        return False
+    return all(
+        isinstance(item, tuple)
+        and len(item) == 2
+        and all(isinstance(i, int) for i in item)
+        for item in value
+    )
+
+
+def is_tuple_of_ints(
+    value: tuple[tuple[int, int] | int, ...],
+) -> TypeGuard[tuple[int, ...]]:
+    if not isinstance(value, tuple):
+        return False
+
+    return all(isinstance(item, int) for item in value)
 
 
 class ForExtractFolder(VisionDataset):

@@ -25,13 +25,13 @@ def conv2d3x3(
         Number of channels in the output image
     stride : int, optional
         Stride of the convolution. Default: 1
-    next_feature_size : bool, optional
-        Whether to use ConvTranspose or not. Default: False
+    next_feature_size : Literal["down", "up"], optional
+        Either down-sampling or up-sampling, by default "down"
 
     Returns
     -------
     nn.Conv2d | nn.ConvTranspose2d
-        2D convolution layer with a kernel size of 3 x 3
+        _description_
     """
     if next_feature_size == "down":
         return nn.Conv2d(
@@ -39,7 +39,13 @@ def conv2d3x3(
         )
     elif next_feature_size == "up":
         return nn.ConvTranspose2d(
-            in_ch, out_ch, kernel_size=3, stride=stride, padding=1, bias=False
+            in_ch,
+            out_ch,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=False,
+            output_padding=0 if stride < 2 else 1,
         )
 
 
@@ -73,7 +79,12 @@ def conv2d1x1(
         )
     elif next_feature_size == "up":
         return nn.ConvTranspose2d(
-            in_ch, out_ch, kernel_size=1, stride=stride, bias=False
+            in_ch,
+            out_ch,
+            kernel_size=1,
+            stride=stride,
+            bias=False,
+            output_padding=0 if stride < 2 else 1,
         )
 
 

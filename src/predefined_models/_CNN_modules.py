@@ -471,12 +471,14 @@ class ResNet(nn.Module):
                 elif isinstance(m, MyBasicBlock) and m.bn2.weight is not None:
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _forward_impl(self, x: Tensor) -> tuple[Tensor, Tensor]:
+    def _forward_impl(
+        self, x: Tensor
+    ) -> tuple[Tensor, tuple[int, ...], Tensor]:
         x = self.conv1(x)
+        output_size_conv1 = x.shape
         x = self.bn1(x)
         x = self.actfunc(x)
         x, pool_indices = self.maxpool(x)
-        print(x.shape)
 
         x = self.layer1(x)
         x = self.layer2(x)
@@ -487,9 +489,9 @@ class ResNet(nn.Module):
         x = torch.flatten(x, 1)
         x = self.fc(x)
 
-        return x, pool_indices
+        return x, output_size_conv1, pool_indices
 
-    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, tuple[int, ...], Tensor]:
         return self._forward_impl(x)
 
 
@@ -521,6 +523,7 @@ class ResNet_(nn.Module):
             stride=2,
             padding=3,
             bias=False,
+            output_padding=1,
         )
         self.bn1_t = norm_layer(self.inplaneses[0])
         self.actfunc = add_activation(activation)
@@ -591,7 +594,12 @@ class ResNet_(nn.Module):
                 elif isinstance(m, MyBasicBlock) and m.bn2.weight is not None:
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _forward_impl(self, x: Tensor, pool_indices: Tensor) -> Tensor:
+    def _forward_impl(
+        self,
+        x: Tensor,
+        input_size_conv1_t: tuple[int, ...],
+        pool_indices: Tensor,
+    ) -> Tensor:
         x = self.fc(x)
         x = self.actfunc(x)
         x = self.avgpool_t(x.view(x.shape[0], -1, 1, 1))
@@ -606,7 +614,8 @@ class ResNet_(nn.Module):
         x = self.layer1_t(x)
         print(x.shape)
 
-        x = self.maxpool_t(x, pool_indices)
+        x = self.maxpool_t(x, pool_indices, input_size_conv1_t)
+        print(x.shape)
         x = self.actfunc(x)
         x = self.bn1_t(x)
         x = self.conv1_t(x)
@@ -626,8 +635,13 @@ class ResNet_(nn.Module):
 
         return x
 
-    def forward(self, x: Tensor, pool_indices: Tensor) -> Tensor:
-        return self._forward_impl(x, pool_indices)
+    def forward(
+        self,
+        x: Tensor,
+        input_size_conv1_t: tuple[int, ...],
+        pool_indices: Tensor,
+    ) -> Tensor:
+        return self._forward_impl(x, input_size_conv1_t, pool_indices)
 
     @staticmethod
     def _inplanes(plane: int, expansion: int) -> Generator[int, None, None]:

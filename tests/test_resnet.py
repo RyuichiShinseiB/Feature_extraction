@@ -60,9 +60,13 @@ def test_sebottleneck() -> None:
 
 
 def test_upsample_mybasicblock() -> None:
+    import math
+
+    size = (32, 32)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     t = torch.rand(10, 100, device=device)
     indices = torch.randint(0, 10, (10, 64, 8, 8), device=device)
+    input_size = math.floor((size[0] + 2 * 3 - (7 - 1) - 1) / 2 + 1)
     resnet = ResNet_(
         MyBasicBlock,
         layers=(3, 4, 6, 3),
@@ -73,5 +77,5 @@ def test_upsample_mybasicblock() -> None:
     ).to(device)
     print(resnet)
 
-    out = resnet(t, indices)
+    out = resnet.forward(t, (input_size, input_size), indices)
     assert out.shape == (10, 1, 32, 32)

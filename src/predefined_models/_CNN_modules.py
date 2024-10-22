@@ -1,5 +1,5 @@
 # Standard Library
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from typing import Literal, Union
 
 # Third Party Library
@@ -131,7 +131,7 @@ class MyBasicBlock(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        mid_ch: int,
+        out_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
         next_feature_size: Literal["down", "up"] = "down",
@@ -141,11 +141,10 @@ class MyBasicBlock(nn.Module):
         super().__init__()
         if expansion is not None:
             self.expansion = expansion
-        out_ch = in_ch
-        self.conv1 = conv2d3x3(in_ch, mid_ch, stride, next_feature_size)
-        self.bn1 = nn.BatchNorm2d(mid_ch)
+        self.conv1 = conv2d3x3(in_ch, out_ch, stride, next_feature_size)
+        self.bn1 = nn.BatchNorm2d(out_ch)
         self.conv2 = conv2d3x3(
-            mid_ch, out_ch, next_feature_size=next_feature_size
+            out_ch, out_ch, next_feature_size=next_feature_size
         )
         self.bn2 = nn.BatchNorm2d(out_ch)
 
@@ -178,7 +177,7 @@ class MyBottleneck(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        mid_ch: int,
+        out_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
         next_feature_size: Literal["down", "up"] = "down",
@@ -189,9 +188,9 @@ class MyBottleneck(nn.Module):
         if expansion is not None:
             self.expansion = expansion
         if next_feature_size == "down":
-            out_ch = mid_ch * self.expansion
+            mid_ch = out_ch // self.expansion
         elif next_feature_size == "up":
-            out_ch = mid_ch // self.expansion
+            mid_ch = out_ch * self.expansion
         self.conv1 = conv2d1x1(
             in_ch, mid_ch, next_feature_size=next_feature_size
         )
@@ -298,7 +297,7 @@ class SEBottleneck(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        mid_ch: int,
+        out_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
         next_feature_size: Literal["down", "up"] = "down",
@@ -309,9 +308,9 @@ class SEBottleneck(nn.Module):
         super().__init__()
         self.expansion = expansion
         if next_feature_size == "down":
-            out_ch = mid_ch * self.expansion
+            mid_ch = out_ch // self.expansion
         elif next_feature_size == "up":
-            out_ch = mid_ch // self.expansion
+            mid_ch = out_ch * self.expansion
         self.residual = nn.Sequential(
             conv2d1x1(in_ch, mid_ch, next_feature_size=next_feature_size),
             nn.BatchNorm2d(mid_ch),
@@ -342,6 +341,42 @@ class SEBottleneck(nn.Module):
         return h
 
 
+def _inplanes(
+    plane: int, coeff: int, expansion: bool, lim: int | None = None
+) -> Generator[int, None, None]:
+    i = 0
+    while lim is None or i < lim:
+        yield plane
+        if expansion:
+            plane *= coeff
+        else:
+            plane //= coeff
+        i += 1
+
+
+def _make_resnet_layer(
+    block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
+    in_ch: int,
+    out_ch: int,
+    num_blocks: int,
+    stride: int = 1,
+    activation: ActivationName = "relu",
+    next_feature_size: Literal["down", "up"] = "down",
+) -> nn.Sequential:
+    layers = []
+    layers.append(block(in_ch, out_ch, stride, activation, next_feature_size))
+    for _ in range(1, num_blocks):
+        layers.append(
+            block(
+                out_ch,
+                out_ch,
+                activation=activation,
+                next_feature_size=next_feature_size,
+            )
+        )
+    return nn.Sequential(*layers)
+
+
 class ResNet(nn.Module):
     def __init__(
         self,
@@ -358,46 +393,53 @@ class ResNet(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
 
-        self.inplanes = inplanes
-        self.dilation = 1
-
+        self.inplaneses = tuple(_inplanes(inplanes, 2, True, 5))
         self.conv1 = nn.Conv2d(
             in_ch,
-            self.inplanes,
+            self.inplaneses[0],
             kernel_size=7,
             stride=2,
             padding=3,
             bias=False,
         )
-        self.bn1 = norm_layer(self.inplanes)
+        self.bn1 = norm_layer(inplanes)
         self.actfunc = add_activation(activation)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(
-            block, 64, layers[0], activation=activation
+        self.maxpool = nn.MaxPool2d(
+            kernel_size=3, stride=2, padding=1, return_indices=True
         )
-        self.layer2 = self._make_layer(
+        self.layer1 = _make_resnet_layer(
             block,
-            128,
+            self.inplaneses[0],
+            self.inplaneses[1],
+            layers[0],
+            activation=activation,
+        )
+        self.layer2 = _make_resnet_layer(
+            block,
+            self.inplaneses[1],
+            self.inplaneses[2],
             layers[1],
             stride=2,
             activation=activation,
         )
-        self.layer3 = self._make_layer(
+        self.layer3 = _make_resnet_layer(
             block,
-            256,
+            self.inplaneses[2],
+            self.inplaneses[3],
             layers[2],
             stride=2,
             activation=activation,
         )
-        self.layer4 = self._make_layer(
+        self.layer4 = _make_resnet_layer(
             block,
-            512,
+            self.inplaneses[3],
+            self.inplaneses[4],
             layers[3],
             stride=2,
             activation=activation,
         )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, out_ch)
+        self.fc = nn.Linear(self.inplaneses[4], out_ch)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -418,37 +460,12 @@ class ResNet(nn.Module):
                 elif isinstance(m, MyBasicBlock) and m.bn2.weight is not None:
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _make_layer(
-        self,
-        block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
-        planes: int,
-        num_blocks: int,
-        stride: int = 1,
-        activation: ActivationName = "relu",
-        next_feature_size: Literal["down", "up"] = "down",
-    ) -> nn.Sequential:
-        layers = []
-        layers.append(
-            block(self.inplanes, planes, stride, activation, next_feature_size)
-        )
-        self.inplanes = planes * block.expansion
-        for _ in range(1, num_blocks):
-            layers.append(
-                block(
-                    self.inplanes,
-                    planes,
-                    activation=activation,
-                    next_feature_size=next_feature_size,
-                )
-            )
-
-        return nn.Sequential(*layers)
-
-    def _forward_impl(self, x: Tensor) -> Tensor:
+    def _forward_impl(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.actfunc(x)
-        x = self.maxpool(x)
+        x, pool_indices = self.maxpool(x)
+        print(x.shape)
 
         x = self.layer1(x)
         x = self.layer2(x)
@@ -459,9 +476,9 @@ class ResNet(nn.Module):
         x = torch.flatten(x, 1)
         x = self.fc(x)
 
-        return x
+        return x, pool_indices
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         return self._forward_impl(x)
 
 
@@ -470,8 +487,8 @@ class ResNet_(nn.Module):
         self,
         block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
         layers: tuple[int, int, int, int],
-        in_ch: int = 1,
-        out_ch: int = 1000,
+        in_ch: int = 1000,
+        out_ch: int = 1,
         inplanes: int = 64,
         zero_init_residual: bool = False,
         activation: ActivationName = "relu",
@@ -483,43 +500,50 @@ class ResNet_(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
 
-        self.inplanes = inplanes
-        self.dilation = 1
+        self.inplaneses = tuple(_inplanes(inplanes, 2, True, 5))
         self.reconstructed_size = reconstructed_size
 
         self.conv1_t = nn.ConvTranspose2d(
+            self.inplaneses[0],
             out_ch,
-            self.inplanes,
             kernel_size=7,
             stride=2,
             padding=3,
             bias=False,
         )
-        self.bn1_t = norm_layer(self.inplanes)
+        self.bn1_t = norm_layer(self.inplaneses[0])
         self.actfunc = add_activation(activation)
-        self.maxunpool = nn.MaxUnpool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1_t = self._make_layer(
-            block, 64, layers[0], activation=activation, next_feature_size="up"
-        )
-        self.layer2_t = self._make_layer(
+        self.maxpool_t = nn.MaxUnpool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1_t = _make_resnet_layer(
             block,
-            128,
+            self.inplaneses[1],
+            self.inplaneses[0],
+            layers[0],
+            activation=activation,
+            next_feature_size="up",
+        )
+        self.layer2_t = _make_resnet_layer(
+            block,
+            self.inplaneses[2],
+            self.inplaneses[1],
             layers[1],
             stride=2,
             activation=activation,
             next_feature_size="up",
         )
-        self.layer3_t = self._make_layer(
+        self.layer3_t = _make_resnet_layer(
             block,
-            256,
+            self.inplaneses[3],
+            self.inplaneses[2],
             layers[2],
             stride=2,
             activation=activation,
             next_feature_size="up",
         )
-        self.layer4_t = self._make_layer(
+        self.layer4_t = _make_resnet_layer(
             block,
-            512,
+            self.inplaneses[4],
+            self.inplaneses[3],
             layers[3],
             stride=2,
             activation=activation,
@@ -535,7 +559,7 @@ class ResNet_(nn.Module):
             stride=(2, 2, 1, 2, 2, 2),
         )
         self.avgpool_t = nn.UpsamplingNearest2d(before_avgpool_size)
-        self.fc = nn.Linear(in_ch, 512 * block.expansion)
+        self.fc = nn.Linear(in_ch, self.inplaneses[4])
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -556,43 +580,22 @@ class ResNet_(nn.Module):
                 elif isinstance(m, MyBasicBlock) and m.bn2.weight is not None:
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _make_layer(
-        self,
-        block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
-        planes: int,
-        num_blocks: int,
-        stride: int = 1,
-        activation: ActivationName = "relu",
-        next_feature_size: Literal["down", "up"] = "down",
-    ) -> nn.Sequential:
-        layers = []
-        layers.append(
-            block(self.inplanes, planes, stride, activation, next_feature_size)
-        )
-        self.inplanes = planes * block.expansion
-        for _ in range(1, num_blocks):
-            layers.append(
-                block(
-                    self.inplanes,
-                    planes,
-                    activation=activation,
-                    next_feature_size=next_feature_size,
-                )
-            )
-
-        return nn.Sequential(*layers)
-
-    def _forward_impl(self, x: Tensor) -> Tensor:
+    def _forward_impl(self, x: Tensor, pool_indices: Tensor) -> Tensor:
         x = self.fc(x)
         x = self.actfunc(x)
         x = self.avgpool_t(x.view(x.shape[0], -1, 1, 1))
+        print(x.shape)
 
         x = self.layer4_t(x)
+        print(x.shape)
         x = self.layer3_t(x)
+        print(x.shape)
         x = self.layer2_t(x)
+        print(x.shape)
         x = self.layer1_t(x)
+        print(x.shape)
 
-        x = self.maxunpool(x)
+        x = self.maxpool_t(x, pool_indices)
         x = self.actfunc(x)
         x = self.bn1_t(x)
         x = self.conv1_t(x)
@@ -612,8 +615,14 @@ class ResNet_(nn.Module):
 
         return x
 
-    def forward(self, x: Tensor) -> Tensor:
-        return self._forward_impl(x)
+    def forward(self, x: Tensor, pool_indices: Tensor) -> Tensor:
+        return self._forward_impl(x, pool_indices)
+
+    @staticmethod
+    def _inplanes(plane: int, expansion: int) -> Generator[int, None, None]:
+        while True:
+            yield plane
+            plane *= expansion
 
 
 def _calc_layers_output_size(

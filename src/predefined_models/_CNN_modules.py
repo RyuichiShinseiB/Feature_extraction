@@ -66,7 +66,7 @@ def conv2d1x1(
     stride : int, optional
         Stride of the convolution. Default: 1
     how_sampling : bool, optional
-        Whether to use ConvTranspose or not. Default: False
+        Either down-sampling or up-sampling, by default "down"
 
     Returns
     -------

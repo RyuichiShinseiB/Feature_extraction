@@ -388,7 +388,7 @@ def _make_resnet_layer(
     return nn.Sequential(*layers)
 
 
-class ResNet(nn.Module):
+class DownSamplingResNet(nn.Module):
     def __init__(
         self,
         block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
@@ -495,7 +495,7 @@ class ResNet(nn.Module):
         return self._forward_impl(x)
 
 
-class ResNet_(nn.Module):
+class UpSamplingResNet(nn.Module):
     def __init__(
         self,
         block: type[MyBasicBlock | MyBottleneck | SEBottleneck],

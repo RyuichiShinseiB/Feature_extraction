@@ -1,17 +1,19 @@
 import torch
 
 from src.predefined_models._CNN_modules import (
+    DownSamplingResNet,
     MyBasicBlock,
     MyBottleneck,
-    ResNet,
-    ResNet_,
     SEBottleneck,
+    UpSamplingResNet,
+    _calc_layers_output_size,
 )
 
 
 def test_mybasicblock() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    resnet = ResNet(
+    input_size = (32, 32)
+    resnet = DownSamplingResNet(
         MyBasicBlock,
         layers=(3, 4, 6, 3),
         in_ch=3,
@@ -19,16 +21,26 @@ def test_mybasicblock() -> None:
         activation="relu",
     ).to(device)
 
-    t = torch.rand(10, 3, 32, 32, device=device)
+    t = torch.rand(10, 3, *input_size, device=device)
 
-    out, indices = resnet(t)
-    print(f"{indices.shape=}")
+    output_size_conv1_calc = _calc_layers_output_size(
+        input_size, (7,), (3,), (1,), (2,)
+    )
+    indices_size_calc = _calc_layers_output_size(
+        output_size_conv1_calc, (3,), (1,), (1,), (2,)
+    )
+
+    out, output_size_conv1_act, indices = resnet(t)
+
+    assert output_size_conv1_act == (10, 64, *output_size_conv1_calc)
+    assert indices.shape == (10, 64, *indices_size_calc)
     assert out.shape == (10, 100)
 
 
 def test_mybottleneck() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    resnet = ResNet(
+    input_size = (32, 32)
+    resnet = DownSamplingResNet(
         MyBottleneck,
         layers=(3, 4, 6, 3),
         in_ch=3,
@@ -36,16 +48,26 @@ def test_mybottleneck() -> None:
         activation="relu",
     ).to(device)
 
-    t = torch.rand(10, 3, 32, 32, device=device)
+    t = torch.rand(10, 3, *input_size, device=device)
 
-    out, indices = resnet(t)
-    print(f"{indices.shape=}")
+    output_size_conv1_calc = _calc_layers_output_size(
+        input_size, (7,), (3,), (1,), (2,)
+    )
+    indices_size_calc = _calc_layers_output_size(
+        output_size_conv1_calc, (3,), (1,), (1,), (2,)
+    )
+
+    out, output_size_conv1_act, indices = resnet(t)
+
+    assert output_size_conv1_act == (10, 64, *output_size_conv1_calc)
+    assert indices.shape == (10, 64, *indices_size_calc)
     assert out.shape == (10, 100)
 
 
 def test_sebottleneck() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    resnet = ResNet(
+    input_size = (32, 32)
+    resnet = DownSamplingResNet(
         SEBottleneck,
         layers=(3, 4, 6, 3),
         in_ch=3,
@@ -53,21 +75,35 @@ def test_sebottleneck() -> None:
         activation="relu",
     ).to(device)
 
-    t = torch.rand(10, 3, 32, 32, device=device)
+    t = torch.rand(10, 3, *input_size, device=device)
 
-    out, indices = resnet(t)
+    output_size_conv1_calc = _calc_layers_output_size(
+        input_size, (7,), (3,), (1,), (2,)
+    )
+    indices_size_calc = _calc_layers_output_size(
+        output_size_conv1_calc, (3,), (1,), (1,), (2,)
+    )
+
+    out, output_size_conv1_act, indices = resnet(t)
+
+    assert output_size_conv1_act == (10, 64, *output_size_conv1_calc)
+    assert indices.shape == (10, 64, *indices_size_calc)
     assert out.shape == (10, 100)
 
 
 def test_upsample_mybasicblock() -> None:
-    import math
-
-    size = (32, 32)
+    upsampled_size = (32, 32)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     t = torch.rand(10, 100, device=device)
-    indices = torch.randint(0, 10, (10, 64, 8, 8), device=device)
-    input_size = math.floor((size[0] + 2 * 3 - (7 - 1) - 1) / 2 + 1)
-    resnet = ResNet_(
+    output_size_conv1_calc = _calc_layers_output_size(
+        upsampled_size, (7,), (3,), (1,), (2,)
+    )
+    indices_size = _calc_layers_output_size(
+        output_size_conv1_calc, (3,), (1,), (1,), (2,)
+    )
+    indices = torch.randint(0, 10, (10, 64, *indices_size), device=device)
+
+    resnet = UpSamplingResNet(
         MyBasicBlock,
         layers=(3, 4, 6, 3),
         in_ch=100,
@@ -77,5 +113,5 @@ def test_upsample_mybasicblock() -> None:
     ).to(device)
     print(resnet)
 
-    out = resnet.forward(t, (input_size, input_size), indices)
-    assert out.shape == (10, 1, 32, 32)
+    out = resnet.forward(t, output_size_conv1_calc, indices)
+    assert out.shape == (10, 1, *upsampled_size)

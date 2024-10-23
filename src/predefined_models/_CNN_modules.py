@@ -13,7 +13,7 @@ def conv2d3x3(
     in_ch: int,
     out_ch: int,
     stride: int = 1,
-    next_feature_size: Literal["down", "up"] = "down",
+    how_sampling: Literal["down", "up"] = "down",
 ) -> nn.Conv2d | nn.ConvTranspose2d:
     """Convolution layer with kernel size of 3x3
 
@@ -25,7 +25,7 @@ def conv2d3x3(
         Number of channels in the output image
     stride : int, optional
         Stride of the convolution. Default: 1
-    next_feature_size : Literal["down", "up"], optional
+    how_sampling : Literal["down", "up"], optional
         Either down-sampling or up-sampling, by default "down"
 
     Returns
@@ -33,11 +33,11 @@ def conv2d3x3(
     nn.Conv2d | nn.ConvTranspose2d
         _description_
     """
-    if next_feature_size == "down":
+    if how_sampling == "down":
         return nn.Conv2d(
             in_ch, out_ch, kernel_size=3, stride=stride, padding=1, bias=False
         )
-    elif next_feature_size == "up":
+    elif how_sampling == "up":
         return nn.ConvTranspose2d(
             in_ch,
             out_ch,
@@ -53,7 +53,7 @@ def conv2d1x1(
     in_ch: int,
     out_ch: int,
     stride: int = 1,
-    next_feature_size: Literal["down", "up"] = "down",
+    how_sampling: Literal["down", "up"] = "down",
 ) -> nn.Conv2d | nn.ConvTranspose2d:
     """Convolution layer with kernel size of 1x1
 
@@ -65,7 +65,7 @@ def conv2d1x1(
         Number of channels in the output image
     stride : int, optional
         Stride of the convolution. Default: 1
-    next_feature_size : bool, optional
+    how_sampling : bool, optional
         Whether to use ConvTranspose or not. Default: False
 
     Returns
@@ -73,11 +73,11 @@ def conv2d1x1(
     nn.Conv2d | nn.ConvTranspose2d
         2D convolution layer with a kernel size of 1 x 1
     """
-    if next_feature_size == "down":
+    if how_sampling == "down":
         return nn.Conv2d(
             in_ch, out_ch, kernel_size=1, stride=stride, bias=False
         )
-    elif next_feature_size == "up":
+    elif how_sampling == "up":
         return nn.ConvTranspose2d(
             in_ch,
             out_ch,
@@ -145,23 +145,21 @@ class MyBasicBlock(nn.Module):
         out_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
-        next_feature_size: Literal["down", "up"] = "down",
+        how_sampling: Literal["down", "up"] = "down",
         *,
         expansion: int | None = None,
     ) -> None:
         super().__init__()
         if expansion is not None:
             self.expansion = expansion
-        self.conv1 = conv2d3x3(in_ch, out_ch, stride, next_feature_size)
+        self.conv1 = conv2d3x3(in_ch, out_ch, stride, how_sampling)
         self.bn1 = nn.BatchNorm2d(out_ch)
-        self.conv2 = conv2d3x3(
-            out_ch, out_ch, next_feature_size=next_feature_size
-        )
+        self.conv2 = conv2d3x3(out_ch, out_ch, how_sampling=how_sampling)
         self.bn2 = nn.BatchNorm2d(out_ch)
 
         if in_ch != out_ch:
             self.shortcut = nn.Sequential(
-                conv2d1x1(in_ch, out_ch, stride, next_feature_size),
+                conv2d1x1(in_ch, out_ch, stride, how_sampling),
                 nn.BatchNorm2d(out_ch),
             )
         else:
@@ -191,35 +189,31 @@ class MyBottleneck(nn.Module):
         out_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
-        next_feature_size: Literal["down", "up"] = "down",
+        how_sampling: Literal["down", "up"] = "down",
         *,
         expansion: int | None = None,
     ) -> None:
         super().__init__()
         if expansion is not None:
             self.expansion = expansion
-        if next_feature_size == "down":
+        if how_sampling == "down":
             mid_ch = out_ch // self.expansion
-        elif next_feature_size == "up":
+        elif how_sampling == "up":
             mid_ch = out_ch * self.expansion
-        self.conv1 = conv2d1x1(
-            in_ch, mid_ch, next_feature_size=next_feature_size
-        )
+        self.conv1 = conv2d1x1(in_ch, mid_ch, how_sampling=how_sampling)
         self.bn1 = nn.BatchNorm2d(mid_ch)
 
-        self.conv2 = conv2d3x3(mid_ch, mid_ch, stride, next_feature_size)
+        self.conv2 = conv2d3x3(mid_ch, mid_ch, stride, how_sampling)
         self.bn2 = nn.BatchNorm2d(mid_ch)
 
-        self.conv3 = conv2d1x1(
-            mid_ch, out_ch, next_feature_size=next_feature_size
-        )
+        self.conv3 = conv2d1x1(mid_ch, out_ch, how_sampling=how_sampling)
         self.bn3 = nn.BatchNorm2d(out_ch)
 
         self.activation = add_activation(activation)
 
         if in_ch != out_ch:
             self.shortcut = nn.Sequential(
-                conv2d1x1(in_ch, out_ch, stride, next_feature_size),
+                conv2d1x1(in_ch, out_ch, stride, how_sampling),
                 nn.BatchNorm2d(out_ch),
             )
         else:
@@ -311,25 +305,25 @@ class SEBottleneck(nn.Module):
         out_ch: int,
         stride: int = 1,
         activation: ActivationName = "relu",
-        next_feature_size: Literal["down", "up"] = "down",
+        how_sampling: Literal["down", "up"] = "down",
         *,
         expansion: int = 4,
         reduction: int = 16,
     ) -> None:
         super().__init__()
         self.expansion = expansion
-        if next_feature_size == "down":
+        if how_sampling == "down":
             mid_ch = out_ch // self.expansion
-        elif next_feature_size == "up":
+        elif how_sampling == "up":
             mid_ch = out_ch * self.expansion
         self.residual = nn.Sequential(
-            conv2d1x1(in_ch, mid_ch, next_feature_size=next_feature_size),
+            conv2d1x1(in_ch, mid_ch, how_sampling=how_sampling),
             nn.BatchNorm2d(mid_ch),
             add_activation(activation),
-            conv2d3x3(mid_ch, mid_ch, stride, next_feature_size),
+            conv2d3x3(mid_ch, mid_ch, stride, how_sampling),
             nn.BatchNorm2d(mid_ch),
             add_activation(activation),
-            conv2d1x1(mid_ch, out_ch, next_feature_size=next_feature_size),
+            conv2d1x1(mid_ch, out_ch, how_sampling=how_sampling),
             nn.BatchNorm2d(out_ch),
         )
 
@@ -337,7 +331,7 @@ class SEBottleneck(nn.Module):
 
         if in_ch != out_ch:
             self.shortcut = nn.Sequential(
-                conv2d1x1(in_ch, out_ch, stride, next_feature_size),
+                conv2d1x1(in_ch, out_ch, stride, how_sampling),
                 nn.BatchNorm2d(out_ch),
             )
         else:
@@ -372,17 +366,17 @@ def _make_resnet_layer(
     num_blocks: int,
     stride: int = 1,
     activation: ActivationName = "relu",
-    next_feature_size: Literal["down", "up"] = "down",
+    how_sampling: Literal["down", "up"] = "down",
 ) -> nn.Sequential:
     layers = []
-    layers.append(block(in_ch, out_ch, stride, activation, next_feature_size))
+    layers.append(block(in_ch, out_ch, stride, activation, how_sampling))
     for _ in range(1, num_blocks):
         layers.append(
             block(
                 out_ch,
                 out_ch,
                 activation=activation,
-                next_feature_size=next_feature_size,
+                how_sampling=how_sampling,
             )
         )
     return nn.Sequential(*layers)
@@ -534,7 +528,7 @@ class UpSamplingResNet(nn.Module):
             self.inplaneses[0],
             layers[0],
             activation=activation,
-            next_feature_size="up",
+            how_sampling="up",
         )
         self.layer2_t = _make_resnet_layer(
             block,
@@ -543,7 +537,7 @@ class UpSamplingResNet(nn.Module):
             layers[1],
             stride=2,
             activation=activation,
-            next_feature_size="up",
+            how_sampling="up",
         )
         self.layer3_t = _make_resnet_layer(
             block,
@@ -552,7 +546,7 @@ class UpSamplingResNet(nn.Module):
             layers[2],
             stride=2,
             activation=activation,
-            next_feature_size="up",
+            how_sampling="up",
         )
         self.layer4_t = _make_resnet_layer(
             block,
@@ -561,7 +555,7 @@ class UpSamplingResNet(nn.Module):
             layers[3],
             stride=2,
             activation=activation,
-            next_feature_size="up",
+            how_sampling="up",
         )
 
         before_avgpool_size = _calc_layers_output_size(

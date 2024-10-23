@@ -136,6 +136,64 @@ def add_activation(
         )
 
 
+class DownShape(nn.Module):
+    def __init__(
+        self, in_ch: int, out_ch: int, activation: ActivationName = "relu"
+    ) -> None:
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_ch, out_ch, 4, 2, 1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_ch)
+        self.activation = add_activation(activation)
+
+    def forward(self, x: Tensor) -> Tensor:
+        h: Tensor = self.conv1(x)
+        h = self.bn1(h)
+        h = self.activation(h)
+
+        return h
+
+
+class UpShape(nn.Module):
+    def __init__(
+        self, in_ch: int, out_ch: int, activation: ActivationName = "leakyrelu"
+    ) -> None:
+        super().__init__()
+        self.conv1 = nn.ConvTranspose2d(in_ch, out_ch, 4, 2, 1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_ch)
+        self.activation = add_activation(activation)
+
+    def forward(self, x: Tensor) -> Tensor:
+        h: Tensor = self.conv1(x)
+        h = self.bn1(h)
+        h = self.activation(h)
+
+        return h
+
+
+class SELayer(nn.Module):
+    def __init__(
+        self,
+        in_ch: int,
+        reduction: int = 16,
+        activation: ActivationName = "relu",
+    ) -> None:
+        super().__init__()
+        self.gap = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc1 = nn.Linear(in_ch, in_ch // reduction)
+        self.actfunc = add_activation(activation)
+        self.fc2 = nn.Linear(in_ch // reduction, in_ch)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x: Tensor) -> Tensor:
+        bs, c, _, _ = x.size()
+        out: Tensor = self.gap(x)
+        out = self.fc1(out.view(bs, -1))
+        out = self.actfunc(out)
+        out = self.fc2(out)
+        out = self.sigmoid(out)
+        return x * out.view(bs, c, 1, 1).expand_as(x)
+
+
 class MyBasicBlock(nn.Module):
     expansion: int = 1
 
@@ -236,64 +294,6 @@ class MyBottleneck(nn.Module):
         h = self.activation(h)
 
         return h
-
-
-class DownShape(nn.Module):
-    def __init__(
-        self, in_ch: int, out_ch: int, activation: ActivationName = "relu"
-    ) -> None:
-        super().__init__()
-        self.conv1 = nn.Conv2d(in_ch, out_ch, 4, 2, 1, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_ch)
-        self.activation = add_activation(activation)
-
-    def forward(self, x: Tensor) -> Tensor:
-        h: Tensor = self.conv1(x)
-        h = self.bn1(h)
-        h = self.activation(h)
-
-        return h
-
-
-class UpShape(nn.Module):
-    def __init__(
-        self, in_ch: int, out_ch: int, activation: ActivationName = "leakyrelu"
-    ) -> None:
-        super().__init__()
-        self.conv1 = nn.ConvTranspose2d(in_ch, out_ch, 4, 2, 1, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_ch)
-        self.activation = add_activation(activation)
-
-    def forward(self, x: Tensor) -> Tensor:
-        h: Tensor = self.conv1(x)
-        h = self.bn1(h)
-        h = self.activation(h)
-
-        return h
-
-
-class SELayer(nn.Module):
-    def __init__(
-        self,
-        in_ch: int,
-        reduction: int = 16,
-        activation: ActivationName = "relu",
-    ) -> None:
-        super().__init__()
-        self.gap = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = nn.Linear(in_ch, in_ch // reduction)
-        self.actfunc = add_activation(activation)
-        self.fc2 = nn.Linear(in_ch // reduction, in_ch)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x: Tensor) -> Tensor:
-        bs, c, _, _ = x.size()
-        out: Tensor = self.gap(x)
-        out = self.fc1(out.view(bs, -1))
-        out = self.actfunc(out)
-        out = self.fc2(out)
-        out = self.sigmoid(out)
-        return x * out.view(bs, c, 1, 1).expand_as(x)
 
 
 class SEBottleneck(nn.Module):

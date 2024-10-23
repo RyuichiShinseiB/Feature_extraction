@@ -337,7 +337,7 @@ class SEBottleneck(nn.Module):
 
         if in_ch != out_ch:
             self.shortcut = nn.Sequential(
-                conv2d1x1(in_ch, out_ch, stride),
+                conv2d1x1(in_ch, out_ch, stride, next_feature_size),
                 nn.BatchNorm2d(out_ch),
             )
         else:

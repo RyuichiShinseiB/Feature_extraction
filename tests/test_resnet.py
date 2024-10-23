@@ -115,3 +115,91 @@ def test_upsample_mybasicblock() -> None:
 
     out = resnet.forward(t, output_size_conv1_calc, indices)
     assert out.shape == (10, 1, *upsampled_size)
+
+
+def test_upsample_mybottleneck() -> None:
+    upsampled_size = (32, 32)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    t = torch.rand(10, 100, device=device)
+    output_size_conv1_calc = _calc_layers_output_size(
+        upsampled_size, (7,), (3,), (1,), (2,)
+    )
+    indices_size = _calc_layers_output_size(
+        output_size_conv1_calc, (3,), (1,), (1,), (2,)
+    )
+    indices = torch.randint(0, 10, (10, 64, *indices_size), device=device)
+
+    resnet = UpSamplingResNet(
+        MyBottleneck,
+        layers=(3, 4, 6, 3),
+        in_ch=100,
+        out_ch=1,
+        activation="relu",
+        reconstructed_size=(32, 32),
+    ).to(device)
+    # print(resnet)
+    print(f"{output_size_conv1_calc=}")
+    print(f"{indices.shape=}")
+
+    out = resnet.forward(t, output_size_conv1_calc, indices)
+    assert out.shape == (10, 1, *upsampled_size)
+
+
+def test_upsample_sebottleneck() -> None:
+    upsampled_size = (32, 32)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    t = torch.rand(10, 100, device=device)
+    output_size_conv1_calc = _calc_layers_output_size(
+        upsampled_size, (7,), (3,), (1,), (2,)
+    )
+    indices_size = _calc_layers_output_size(
+        output_size_conv1_calc, (3,), (1,), (1,), (2,)
+    )
+    indices = torch.randint(0, 10, (10, 64, *indices_size), device=device)
+
+    resnet = UpSamplingResNet(
+        SEBottleneck,
+        layers=(3, 4, 6, 3),
+        in_ch=100,
+        out_ch=1,
+        activation="relu",
+        reconstructed_size=(32, 32),
+    ).to(device)
+    print(resnet)
+
+    print(f"{output_size_conv1_calc=}")
+    out = resnet.forward(t, output_size_conv1_calc, indices)
+    assert out.shape == (10, 1, *upsampled_size)
+
+
+def test_up_down_sampling_with_bottleneck() -> None:
+    block = MyBottleneck
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    input_size = (32, 32)
+
+    downsampling = DownSamplingResNet(
+        block,
+        layers=(3, 4, 6, 3),
+        in_ch=3,
+        out_ch=100,
+        activation="relu",
+    ).to(device)
+
+    upsampling = UpSamplingResNet(
+        block,
+        layers=(3, 4, 6, 3),
+        in_ch=100,
+        out_ch=3,
+        activation="relu",
+        reconstructed_size=input_size,
+    ).to(device)
+
+    t = torch.rand(10, 3, *input_size, device=device)
+
+    vec, size, indices = downsampling.forward(t)
+    print(f"{vec.shape=}")
+    print(f"{size=}")
+    print(f"{indices.shape=}")
+    mat = upsampling(vec, size, indices)
+
+    assert mat.shape == t.shape

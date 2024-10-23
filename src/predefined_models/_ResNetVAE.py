@@ -1,4 +1,5 @@
-from collections.abc import Callable
+from collections.abc import Callable, Generator
+from typing import Literal
 
 import torch
 from torch import nn
@@ -8,11 +9,63 @@ from ._CNN_modules import (
     MyBasicBlock,
     MyBottleneck,
     SEBottleneck,
-    _calc_layers_output_size,
-    _inplanes,
-    _make_resnet_layer,
     add_activation,
 )
+
+
+def _make_resnet_layer(
+    block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
+    in_ch: int,
+    out_ch: int,
+    num_blocks: int,
+    stride: int = 1,
+    activation: ActivationName = "relu",
+    how_sampling: Literal["down", "up"] = "down",
+) -> nn.Sequential:
+    layers = []
+    layers.append(block(in_ch, out_ch, stride, activation, how_sampling))
+    for _ in range(1, num_blocks):
+        layers.append(
+            block(
+                out_ch,
+                out_ch,
+                activation=activation,
+                how_sampling=how_sampling,
+            )
+        )
+    return nn.Sequential(*layers)
+
+
+def _inplanes(
+    plane: int, coeff: int, expansion: bool, lim: int | None = None
+) -> Generator[int, None, None]:
+    i = 0
+    while lim is None or i < lim:
+        yield plane
+        if expansion:
+            plane *= coeff
+        else:
+            plane //= coeff
+        i += 1
+
+
+def _calc_layers_output_size(
+    size: tuple[int, int] | int,
+    kernel_size: tuple[tuple[int, int] | int, ...],
+    padding: tuple[tuple[int, int] | int, ...],
+    dilation: tuple[tuple[int, int] | int, ...],
+    stride: tuple[tuple[int, int] | int, ...],
+) -> tuple[int, int]:
+    _size = torch.tensor(size)
+    _kernel_size = torch.tensor(kernel_size)
+    _padding = torch.tensor(padding)
+    _dilation = torch.tensor(dilation)
+    _stride = torch.tensor(stride)
+    for k, p, d, s in zip(_kernel_size, _padding, _dilation, _stride):
+        _tempsize = (_size + 2 * p - d * (k - 1) - 1) / s + 1
+        _size = torch.floor(_tempsize)
+
+    return (int(_size[0].item()), int(_size[1].item()))
 
 
 class DownSamplingResNet(nn.Module):

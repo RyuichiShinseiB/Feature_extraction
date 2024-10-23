@@ -1,12 +1,14 @@
 import torch
+from predefined_models._ResNetVAE import (
+    DownSamplingResNet,
+    UpSamplingResNet,
+    _calc_layers_output_size,
+)
 
 from src.predefined_models._CNN_modules import (
-    DownSamplingResNet,
     MyBasicBlock,
     MyBottleneck,
     SEBottleneck,
-    UpSamplingResNet,
-    _calc_layers_output_size,
 )
 
 

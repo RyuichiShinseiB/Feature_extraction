@@ -501,6 +501,7 @@ class UpSamplingResNet(nn.Module):
         inplanes: int = 64,
         zero_init_residual: bool = False,
         activation: ActivationName = "relu",
+        output_activation: ActivationName = "sigmoid",
         norm_layer: Callable[..., nn.Module] | None = None,
         *,
         reconstructed_size: tuple[int, int] = (64, 64),
@@ -514,6 +515,7 @@ class UpSamplingResNet(nn.Module):
         )
         self.reconstructed_size = reconstructed_size
 
+        self.output_actfunc = add_activation(output_activation)
         self.conv1_t = nn.ConvTranspose2d(
             self.inplaneses[0],
             out_ch,
@@ -611,6 +613,7 @@ class UpSamplingResNet(nn.Module):
         x = self.actfunc(x)
         x = self.bn1_t(x)
         x = self.conv1_t(x)
+        x = self.output_actfunc(x)
         # x = self.conv1(x)
         # x = self.bn1(x)
         # x = self.actfunc(x)

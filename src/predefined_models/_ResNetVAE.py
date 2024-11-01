@@ -85,7 +85,8 @@ class DownSamplingResNet(nn.Module):
             norm_layer = nn.BatchNorm2d
 
         self.inplaneses = tuple(
-            [inplanes] + list(_inplanes(inplanes * 4, 2, True, 4))
+            [inplanes]
+            + list(_inplanes(inplanes * block.expansion, 2, True, 4))
         )
         self.conv1 = nn.Conv2d(
             in_ch,
@@ -197,7 +198,8 @@ class UpSamplingResNet(nn.Module):
             norm_layer = nn.BatchNorm2d
 
         self.inplaneses = tuple(
-            [inplanes] + list(_inplanes(inplanes * 4, 2, True, 4))
+            [inplanes]
+            + list(_inplanes(inplanes * block.expansion, 2, True, 4))
         )
         self.reconstructed_size = reconstructed_size
 

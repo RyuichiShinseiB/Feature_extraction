@@ -2,7 +2,7 @@ Feature extraction with Autoencoder
 ---
 # 実行時のメモ
 学習には時間がかかるので、もし夜中に学習をさせたいときはLinuxを使ってる人は `nohup` や `screen` を使ってssh接続を切った後でも学習を続けられるようにしよう。
-## `nohub`の使い方
+## `nohup`の使い方
 バックグラウンドで実行
 ```bash
 user@pc:~/project$ nohup python sample.py &

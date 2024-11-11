@@ -77,7 +77,7 @@ class AutoencoderHyperParameter(RecursiveDataclass):
     decoder_output_activation: ActivationName = "sigmoid"
     # For ResNetVAE
     input_size: tuple[int, int] | None = None
-    block_name: ResNetBlockName = "basicblock"
+    block_name: ResNetBlockName | None = None
 
 
 @dataclass

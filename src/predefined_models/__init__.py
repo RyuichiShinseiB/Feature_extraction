@@ -28,7 +28,10 @@ def set_hyper_parameters(
     model_cfg: AutoencoderModelConfig | MAEViTModelConfig,
 ) -> dict[str, int | str] | Any:
     if isinstance(model_cfg, AutoencoderModelConfig | MAEViTModelConfig):
-        return asdict(model_cfg.hyper_parameters)
+        return asdict(
+            model_cfg.hyper_parameters,
+            dict_factory=lambda x: {k: v for (k, v) in x if v is not None},
+        )
     elif isinstance(model_cfg, DictConfig):
         return OmegaConf.to_container(model_cfg.hyper_parameters)
     else:

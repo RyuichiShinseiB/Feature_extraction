@@ -49,3 +49,5 @@ Transforms: TypeAlias = (
     | transforms.Normalize
     | transforms.ToTensor
 )
+
+ResNetBlockName = Literal["basicblock", "bottleneck", "sebottleneck"]

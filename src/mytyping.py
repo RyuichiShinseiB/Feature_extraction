@@ -21,7 +21,7 @@ ModelName = Literal[
     "SimpleCVAE64",
     "SimpleCVAEsoftplus32",
     "SimpleCVAEsoftplus64",
-    "ResNetVAE"
+    "ResNetVAE",
     # ViT type model
     "MAEViT",
 ]

@@ -10,6 +10,7 @@ from src.configs.model_configs import AutoencoderModelConfig, MAEViTModelConfig
 
 # Local Library
 from ..mytyping import Device, Model, ModelName
+from ._ResNetVAE import ResNetVAE
 from ._SECAE32 import SECAE32
 from ._SECAE64 import SECAE64
 from ._SEConvVAE64 import SECVAE64
@@ -65,5 +66,7 @@ def model_define(  # noqa: C901
         return SimpleCVAEsoftplus32(**hyper_parameters, device=device)
     elif model_name == "SimpleCVAE_softplus64":
         return SimpleCVAEsoftplus64(**hyper_parameters, device=device)
+    elif model_name == "ResNetVAE":
+        return ResNetVAE(**hyper_parameters, device=device)
     else:
         raise ValueError(f'There is no defined model such as "{model_name}"')

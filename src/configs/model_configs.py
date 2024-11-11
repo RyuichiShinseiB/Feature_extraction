@@ -9,7 +9,12 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 # First Party Library
-from src.mytyping import ActivationName, ModelName, TransformsNameValue
+from src.mytyping import (
+    ActivationName,
+    ModelName,
+    ResNetBlockName,
+    TransformsNameValue,
+)
 
 
 def _is_recursivedataclass(obj: type) -> TypeGuard["RecursiveDataclass"]:
@@ -70,6 +75,9 @@ class AutoencoderHyperParameter(RecursiveDataclass):
     decoder_activation: ActivationName = "relu"
     encoder_output_activation: ActivationName = "relu"
     decoder_output_activation: ActivationName = "sigmoid"
+    # For ResNetVAE
+    input_size: tuple[int, int] | None = None
+    block_name: ResNetBlockName = "basicblock"
 
 
 @dataclass

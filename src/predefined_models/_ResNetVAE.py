@@ -37,15 +37,12 @@ def _make_resnet_layer(
 
 
 def _inplanes(
-    plane: int, coeff: int, expansion: bool, lim: int | None = None
+    plane: int, coeff: int, lim: int | None = None
 ) -> Generator[int, None, None]:
     i = 0
     while lim is None or i < lim:
         yield plane
-        if expansion:
-            plane *= coeff
-        else:
-            plane //= coeff
+        plane *= coeff
         i += 1
 
 
@@ -85,8 +82,7 @@ class DownSamplingResNet(nn.Module):
             norm_layer = nn.BatchNorm2d
 
         self.inplaneses = tuple(
-            [inplanes]
-            + list(_inplanes(inplanes * block.expansion, 2, True, 4))
+            [inplanes] + list(_inplanes(inplanes * block.expansion, 2, 4))
         )
         self.conv1 = nn.Conv2d(
             in_ch,
@@ -198,8 +194,7 @@ class UpSamplingResNet(nn.Module):
             norm_layer = nn.BatchNorm2d
 
         self.inplaneses = tuple(
-            [inplanes]
-            + list(_inplanes(inplanes * block.expansion, 2, True, 4))
+            [inplanes] + list(_inplanes(inplanes * block.expansion, 2, 4))
         )
         self.reconstructed_size = reconstructed_size
 

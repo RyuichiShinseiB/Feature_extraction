@@ -1,5 +1,9 @@
+import hydra
 import torch
+from omegaconf import DictConfig
 
+from src.configs.model_configs import TrainAutoencoderConfig
+from src.predefined_models import model_define
 from src.predefined_models._CNN_modules import (
     MyBasicBlock,
     MyBottleneck,
@@ -10,6 +14,14 @@ from src.predefined_models._ResNetVAE import (
     UpSamplingResNet,
     _calc_layers_output_size,
 )
+
+
+def _load_config() -> DictConfig:
+    with hydra.initialize(
+        "../src/configs/train_conf/test_configs/", version_base=None
+    ):
+        cfg = hydra.compose(config_name="autoencoder")
+    return cfg
 
 
 def test_mybasicblock() -> None:
@@ -205,3 +217,16 @@ def test_up_down_sampling_with_bottleneck() -> None:
     mat = upsampling(vec, size, indices)
 
     assert mat.shape == t.shape
+
+
+def test_load_config() -> None:
+    _load_config()
+
+
+def test_load_resnetvae() -> None:
+    # cfg = _load_config()
+    cfg = TrainAutoencoderConfig.from_dictconfig(_load_config())
+    print(cfg.model)
+
+    model = model_define(cfg.model)
+    print(model)

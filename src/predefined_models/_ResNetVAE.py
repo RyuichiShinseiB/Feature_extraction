@@ -4,7 +4,7 @@ from typing import Literal
 import torch
 from torch import nn
 
-from ..mytyping import ActivationName, Device, Tensor
+from ..mytyping import ActivationName, Device, ResNetBlockName, Tensor
 from ._CNN_modules import (
     MyBasicBlock,
     MyBottleneck,
@@ -63,6 +63,17 @@ def _calc_layers_output_size(
         _size = torch.floor(_tempsize)
 
     return (int(_size[0].item()), int(_size[1].item()))
+
+
+def _set_resnet_block(
+    block_name: ResNetBlockName | None,
+) -> type[MyBasicBlock | MyBottleneck | SEBottleneck]:
+    if block_name == "basicblock" or block_name is None:
+        return MyBasicBlock
+    elif block_name == "bottleneck":
+        return MyBottleneck
+    elif block_name == "sebottleneck":
+        return SEBottleneck
 
 
 class DownSamplingResNet(nn.Module):
@@ -323,13 +334,14 @@ class ResNetVAE(nn.Module):
         decoder_output_activation: ActivationName,
         input_size: tuple[int, int],
         device: Device,
+        block_name: ResNetBlockName | None = None,
     ) -> None:
         super().__init__()
         self.device = device
         self.latent_dimensions = latent_dimensions
 
         self.encoder = DownSamplingResNet(
-            block=MyBasicBlock,
+            block=_set_resnet_block(block_name),
             layers=(3, 4, 6, 3),
             in_ch=input_channels,
             out_ch=latent_dimensions,
@@ -351,7 +363,7 @@ class ResNetVAE(nn.Module):
         )
 
         self.decoder = UpSamplingResNet(
-            block=MyBasicBlock,
+            block=_set_resnet_block(block_name),
             layers=(3, 4, 6, 3),
             in_ch=latent_dimensions,
             out_ch=input_channels,

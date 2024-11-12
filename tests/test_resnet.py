@@ -230,3 +230,14 @@ def test_load_resnetvae() -> None:
 
     model = model_define(cfg.model)
     print(model)
+
+
+def test_training_resnetvae() -> None:
+    cfg = TrainAutoencoderConfig.from_dictconfig(_load_config())
+    print(cfg.model)
+
+    model = model_define(cfg.model)
+    for bs in [16, 32, 64, 128]:
+        x = torch.randn((bs, 1, 32, 32))
+        y = model(x)
+        print(y[0].shape)

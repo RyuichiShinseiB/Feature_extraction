@@ -17,13 +17,14 @@ def calc_loss(
     reconst_loss: Callable[[Tensor, Tensor], Tensor],
     latent_loss: Callable[[Tensor, Tensor], Tensor] | None,
     model: Model,
-) -> tuple[Tensor, Tensor]:
+) -> tuple[dict[Literal["reconst", "kldiv"], Tensor], Tensor]:
+    loss: dict[Literal["reconst", "kldiv"], Tensor] = {}
     x_pred, _latent = model(input_data)
-    loss = reconst_loss(
+    loss["reconst"] = reconst_loss(
         x_pred.flatten(start_dim=1), input_data.flatten(start_dim=1)
     )
     if latent_loss is not None:
-        loss += latent_loss(_latent[-2], _latent[-1])
+        loss["kldiv"] = latent_loss(_latent[-2], _latent[-1])
     return loss, x_pred
 
 

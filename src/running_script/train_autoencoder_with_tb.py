@@ -1,4 +1,5 @@
 # Standard Library
+import math
 from pathlib import Path
 
 # Third Party Library
@@ -11,7 +12,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.configs.model_configs import TrainAutoencoderConfig
 from src.loss_function import LossFunction, calc_loss
-from src.mytyping import Tensor
 from src.predefined_models import model_define
 from src.utilities import (
     EarlyStopping,
@@ -22,13 +22,44 @@ from src.utilities import (
 
 
 def _mean(vals: list[float]) -> float:
+    if vals == []:
+        return float("nan")
     return sum(vals) / len(vals)
+
+
+def _write_loss_progress(
+    writer: SummaryWriter,
+    epoch: int,
+    train_loss: float,
+    train_reconst: float,
+    train_kldiv: float,
+    valid_loss: float,
+    valid_reconst: float,
+    valid_kldiv: float,
+) -> SummaryWriter:
+    ## 訓練時
+    writer.add_scalar("Loss/Training/Total", train_loss, epoch)
+
+    writer.add_scalar("Loss/Training/Reconst", train_reconst, epoch)
+
+    if not math.isnan(train_kldiv):
+        writer.add_scalar("Loss/Training/KL-Div.", train_kldiv, epoch)
+
+    ## 検証時
+    writer.add_scalar("Loss/Valid/Total", valid_loss, epoch)
+
+    writer.add_scalar("Loss/Valid/Reconst", valid_reconst, epoch)
+
+    if not math.isnan(valid_kldiv):
+        writer.add_scalar("Loss/Valid/KL-Div.", valid_kldiv, epoch)
+
+    return writer
 
 
 @hydra.main(
     version_base=None,
     config_path="../configs/train_conf",
-    config_name="autoencoder",
+    config_name="ResNetVAE",
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
@@ -92,7 +123,7 @@ def main(_cfg: DictConfig) -> None:
     # TensorBoard による学習経過の追跡
     # Managing learning progress with TensorBoard.
     writer = SummaryWriter(model_save_path / "run-tb")
-    reconst_images: list[Tensor] = []
+    # reconst_images: list[Tensor] = []
 
     test_image = next(iter(val_dataloader))[0][:64].to(device)
 
@@ -104,7 +135,12 @@ def main(_cfg: DictConfig) -> None:
     # Training start
     for epoch in range(cfg.train.train_hyperparameter.epochs):
         train_losses: list[float] = []
+        train_reconst_errors: list[float] = []
+        train_kldiv_errors: list[float] = []
+
         valid_losses: list[float] = []
+        valid_reconst_errors: list[float] = []
+        valid_kldiv_errors: list[float] = []
 
         # 訓練
         for x, _ in train_dataloader:
@@ -114,12 +150,13 @@ def main(_cfg: DictConfig) -> None:
             # データをGPUに移動
             x = x.to(device)
             # 損失の計算
-            loss, _ = calc_loss(
+            errors, _ = calc_loss(
                 input_data=x,
                 reconst_loss=criterion.reconst_loss,
                 latent_loss=criterion.latent_loss,
                 model=model,
             )
+            loss = errors["reconst"] + errors.get("kldiv", 0)
 
             # 重みの更新
             optimizer.zero_grad()
@@ -128,26 +165,47 @@ def main(_cfg: DictConfig) -> None:
 
             # 損失をリストに保存
             train_losses.append(loss.cpu().item())
+            train_reconst_errors.append(errors["reconst"].cpu().item())
+            if errors.get("kldiv") is not None:
+                train_kldiv_errors.append(errors["kldiv"].cpu().item())
 
         # 検証
         for x, _ in val_dataloader:
             model.eval()
             x = x.to(device)
-            loss, _ = calc_loss(
+            errors, _ = calc_loss(
                 input_data=x,
                 reconst_loss=criterion.reconst_loss,
                 latent_loss=criterion.latent_loss,
                 model=model,
             )
+            loss = errors["reconst"] + errors.get("kldiv", 0)
 
             # 損失をリストに保存
             valid_losses.append(loss.cpu().item())
+            valid_reconst_errors.append(errors["reconst"].cpu().item())
+            if errors.get("kldiv") is not None:
+                valid_kldiv_errors.append(errors["kldiv"].cpu().item())
 
+        # 1エポックでの損失の平均
         mean_train_loss = _mean(train_losses)
+        mean_train_reconst_error = _mean(train_reconst_errors)
+        mean_train_kldiv_error = _mean(train_kldiv_errors)
         mean_valid_loss = _mean(valid_losses)
+        mean_valid_reconst_error = _mean(valid_reconst_errors)
+        mean_valid_kldiv_error = _mean(valid_kldiv_errors)
 
-        writer.add_scalar("Loss/Training/Reconst", mean_train_loss, epoch)
-        writer.add_scalar("Loss/Valid/Reconst", mean_valid_loss, epoch)
+        # 損失の経過を記録
+        _write_loss_progress(
+            writer,
+            epoch,
+            mean_train_loss,
+            mean_train_reconst_error,
+            mean_train_kldiv_error,
+            mean_valid_loss,
+            mean_valid_reconst_error,
+            mean_valid_kldiv_error,
+        )
 
         print(
             "Epoch: {}/{}\t|Train loss: {:.5f}\t|Valid loss: {:.5f}".format(
@@ -162,9 +220,9 @@ def main(_cfg: DictConfig) -> None:
         if (epoch + 1) % save_interval == 0 or epoch == 0:
             model.eval()
             test_output, _ = model(test_image)
-            reconst_images.append(
-                vutils.make_grid(test_output, normalize=True)
-            )
+            # reconst_images.append(
+            #     vutils.make_grid(test_output, normalize=True)
+            # )
             writer.add_image(
                 "Reconstructed_images",
                 vutils.make_grid(
@@ -177,7 +235,9 @@ def main(_cfg: DictConfig) -> None:
 
         if cfg.train.train_hyperparameter.early_stopping:
             early_stopping(
-                mean_train_loss, model, save_path=model_save_path / "model.pth"
+                mean_train_loss,
+                model,
+                save_path=model_save_path / "model_parameters.pth",
             )
             if early_stopping.early_stop:
                 break

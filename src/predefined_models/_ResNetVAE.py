@@ -388,3 +388,9 @@ class ResNetVAE(nn.Module):
     def reparametarization(mean: Tensor, var: Tensor) -> Tensor:
         eps = torch.randn(mean.shape)
         return mean + var.sqrt() * eps
+
+    def estimate_distribution_params(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        x, _, _ = self.encoder.forward(x)
+        mean = self.mean_layer(x)
+        var = self.var_layer(x)
+        return mean, var

@@ -28,6 +28,7 @@ optuna = "^3.4.0"
 umap-learn = "^0.5.4"
 omegaconf = "^2.3.0"
 onnx = "^1.15.0"
+tensorboard = "^2.18.0"
 
 
 

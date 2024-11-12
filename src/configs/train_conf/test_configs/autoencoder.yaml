@@ -12,6 +12,7 @@ model:
     input_size:
     - 32
     - 32
+    block_name: "basicblock"
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}

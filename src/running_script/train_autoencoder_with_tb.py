@@ -109,6 +109,9 @@ def main(_cfg: DictConfig) -> None:
         generator_seed=42,
     )
 
+    length_of_dataloader = len(train_dataloader)
+    latent_interval = length_of_dataloader // 10
+
     # 損失関数の設定
     criterion = LossFunction(
         cfg.train.train_hyperparameter.reconst_loss,
@@ -143,7 +146,7 @@ def main(_cfg: DictConfig) -> None:
         valid_kldiv_errors: list[float] = []
 
         # 訓練
-        for x, _ in train_dataloader:
+        for i, (x, _) in enumerate(train_dataloader, 1):
             # モデルの訓練
             model.train()
 
@@ -156,7 +159,9 @@ def main(_cfg: DictConfig) -> None:
                 latent_loss=criterion.latent_loss,
                 model=model,
             )
-            loss = errors["reconst"] + errors.get("kldiv", 0)
+            loss = errors["reconst"]
+            if i % latent_interval == 0:
+                loss += errors.get("kldiv", 0)
 
             # 重みの更新
             optimizer.zero_grad()
@@ -236,7 +241,7 @@ def main(_cfg: DictConfig) -> None:
 
         if cfg.train.train_hyperparameter.early_stopping:
             early_stopping(
-                mean_train_loss,
+                mean_valid_loss,
                 model,
                 save_path=model_save_path / "model_parameters.pth",
             )

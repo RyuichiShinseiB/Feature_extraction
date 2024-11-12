@@ -1,10 +1,8 @@
 # Standard Library
-import os
 from pathlib import Path
 
 # Third Party Library
 import hydra
-import matplotlib.pyplot as plt
 import torch
 import torchvision.utils as vutils
 from omegaconf import DictConfig
@@ -41,7 +39,7 @@ def main(_cfg: DictConfig) -> None:
     # Paths to store trained models and reconstructed images in training
     base_save_path = Path(cfg.train.trained_save_path)
     model_save_path = Path("./models") / base_save_path
-    figure_save_path = Path("./reports/figures") / base_save_path
+    # figure_save_path = Path("./reports/figures") / base_save_path
 
     # 再構成画像を保存する間隔
     # Storage interval of reconstructed images
@@ -186,29 +184,29 @@ def main(_cfg: DictConfig) -> None:
 
     writer.close()
 
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    ax.plot(range(len(train_losses)), train_losses, label="train loss")
-    ax.set_xlabel("iterations")
-    ax.set_ylabel(
-        f"{cfg.train.train_hyperparameter.reconst_loss.upper()} loss"
-    )
-    ax.legend()
-    if not figure_save_path.exists():
-        os.makedirs(figure_save_path)
-    fig.tight_layout()
-    fig.savefig(figure_save_path / "loss.jpg")
+    # fig = plt.figure()
+    # ax = fig.add_subplot(1, 1, 1)
+    # ax.plot(range(len(train_losses)), train_losses, label="train loss")
+    # ax.set_xlabel("iterations")
+    # ax.set_ylabel(
+    #     f"{cfg.train.train_hyperparameter.reconst_loss.upper()} loss"
+    # )
+    # ax.legend()
+    # if not figure_save_path.exists():
+    #     os.makedirs(figure_save_path)
+    # fig.tight_layout()
+    # fig.savefig(figure_save_path / "loss.jpg")
 
-    for i, reconst_image in enumerate(reconst_images):
-        vutils.save_image(
-            reconst_image,
-            fp=figure_save_path / f"reconst_images{i*save_interval:03}.png",
-        )
+    # for i, reconst_image in enumerate(reconst_images):
+    #     vutils.save_image(
+    #         reconst_image,
+    #         fp=figure_save_path / f"reconst_images{i*save_interval:03}.png",
+    #     )
 
-    vutils.save_image(
-        vutils.make_grid(test_image, normalize=True),
-        fp=figure_save_path / "test_images.png",
-    )
+    # vutils.save_image(
+    #     vutils.make_grid(test_image, normalize=True),
+    #     fp=figure_save_path / "test_images.png",
+    # )
 
     torch.save(model.state_dict(), model_save_path / "model_parameters.pth")
 

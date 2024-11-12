@@ -9,6 +9,7 @@ model:
     decoder_activation: "selu"
     encoder_output_activation: "selu"
     decoder_output_activation: "sigmoid"
+    block_name: "basicblock"
     input_size:
     - 32
     - 32
@@ -17,7 +18,7 @@ train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
     lr: 1.0e-3
-    epochs: 1000
+    epochs: 10
     batch_size: 128
     reconst_loss: bce
     latent_loss: null

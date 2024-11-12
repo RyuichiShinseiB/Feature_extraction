@@ -9,11 +9,10 @@ import torch
 import torchvision.utils as vutils
 from omegaconf import DictConfig
 from torch import optim
+from torch.utils.tensorboard import SummaryWriter
 
 from src.configs.model_configs import TrainAutoencoderConfig
 from src.loss_function import LossFunction, calc_loss
-
-# First Party Library
 from src.mytyping import Tensor
 from src.predefined_models import model_define
 from src.utilities import (
@@ -22,6 +21,10 @@ from src.utilities import (
     get_dataloader,
     weight_init,
 )
+
+
+def _mean(vals: list[float]) -> float:
+    return sum(vals) / len(vals)
 
 
 @hydra.main(
@@ -88,19 +91,25 @@ def main(_cfg: DictConfig) -> None:
         model.parameters(), cfg.train.train_hyperparameter.lr
     )
 
+    # TensorBoard による学習経過の追跡
+    # Managing learning progress with TensorBoard.
+    writer = SummaryWriter(model_save_path / "run-tb")
     reconst_images: list[Tensor] = []
-    train_losses: list[float] = []
-    valid_losses: list[float] = []
 
     test_image = next(iter(val_dataloader))[0][:64].to(device)
 
+    writer.add_image(
+        "Test_images",
+        vutils.make_grid(test_image, normalize=True),
+    )
+
     # Training start
     for epoch in range(cfg.train.train_hyperparameter.epochs):
-        train_loss = 0.0
-        valid_loss = 0.0
+        train_losses: list[float] = []
+        valid_losses: list[float] = []
 
         # 訓練
-        for _i_train, (x, _) in enumerate(train_dataloader, 0):
+        for x, _ in train_dataloader:
             # モデルの訓練
             model.train()
 
@@ -121,10 +130,9 @@ def main(_cfg: DictConfig) -> None:
 
             # 損失をリストに保存
             train_losses.append(loss.cpu().item())
-            train_loss += loss.cpu().item()
 
         # 検証
-        for _i_valid, (x, _) in enumerate(val_dataloader, 0):
+        for x, _ in val_dataloader:
             model.eval()
             x = x.to(device)
             loss, _ = calc_loss(
@@ -136,14 +144,19 @@ def main(_cfg: DictConfig) -> None:
 
             # 損失をリストに保存
             valid_losses.append(loss.cpu().item())
-            valid_loss += loss.cpu().item()
+
+        mean_train_loss = _mean(train_losses)
+        mean_valid_loss = _mean(valid_losses)
+
+        writer.add_scalar("Loss/Training/Reconst", mean_train_loss, epoch)
+        writer.add_scalar("Loss/Valid/Reconst", mean_valid_loss, epoch)
 
         print(
             "Epoch: {}/{}\t|Train loss: {:.5f}\t|Valid loss: {:.5f}".format(
                 epoch + 1,
                 cfg.train.train_hyperparameter.epochs,
-                train_loss / (_i_train + 1),
-                valid_loss / (_i_valid + 1),
+                mean_train_loss,
+                mean_valid_loss,
             )
         )
 
@@ -154,13 +167,24 @@ def main(_cfg: DictConfig) -> None:
             reconst_images.append(
                 vutils.make_grid(test_output, normalize=True)
             )
+            writer.add_image(
+                "Reconstructed_images",
+                vutils.make_grid(
+                    test_output.view(
+                        -1, 1, *cfg.model.hyper_parameters.input_size
+                    ),
+                    normalize=True,
+                ),
+            )
 
         if cfg.train.train_hyperparameter.early_stopping:
             early_stopping(
-                train_loss, model, save_path=model_save_path / "model.pth"
+                mean_train_loss, model, save_path=model_save_path / "model.pth"
             )
             if early_stopping.early_stop:
                 break
+
+    writer.close()
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)

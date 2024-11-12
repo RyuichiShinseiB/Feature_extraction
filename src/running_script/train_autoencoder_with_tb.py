@@ -231,6 +231,7 @@ def main(_cfg: DictConfig) -> None:
                     ),
                     normalize=True,
                 ),
+                epoch,
             )
 
         if cfg.train.train_hyperparameter.early_stopping:

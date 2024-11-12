@@ -11,7 +11,7 @@ model:
     decoder_output_activation: "sigmoid"
     input_size:
     - 32
-    - 33
+    - 32
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}

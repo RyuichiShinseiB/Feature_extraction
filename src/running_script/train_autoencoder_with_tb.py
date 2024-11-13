@@ -109,8 +109,8 @@ def main(_cfg: DictConfig) -> None:
         generator_seed=42,
     )
 
-    length_of_dataloader = len(train_dataloader)
-    latent_interval = length_of_dataloader // 10
+    # length_of_dataloader = len(train_dataloader)
+    # latent_interval = length_of_dataloader // 10
 
     # 損失関数の設定
     criterion = LossFunction(
@@ -135,120 +135,126 @@ def main(_cfg: DictConfig) -> None:
         vutils.make_grid(test_image, normalize=True),
     )
 
-    # Training start
-    for epoch in range(cfg.train.train_hyperparameter.epochs):
-        train_losses: list[float] = []
-        train_reconst_errors: list[float] = []
-        train_kldiv_errors: list[float] = []
+    try:
+        # Training start
+        for epoch in range(cfg.train.train_hyperparameter.epochs):
+            train_losses: list[float] = []
+            train_reconst_errors: list[float] = []
+            train_kldiv_errors: list[float] = []
 
-        valid_losses: list[float] = []
-        valid_reconst_errors: list[float] = []
-        valid_kldiv_errors: list[float] = []
+            valid_losses: list[float] = []
+            valid_reconst_errors: list[float] = []
+            valid_kldiv_errors: list[float] = []
 
-        # 訓練
-        for i, (x, _) in enumerate(train_dataloader, 1):
-            # モデルの訓練
-            model.train()
+            # 訓練
+            for i, (x, _) in enumerate(train_dataloader, 1):
+                # モデルの訓練
+                model.train()
 
-            # データをGPUに移動
-            x = x.to(device)
-            # 損失の計算
-            errors, _ = calc_loss(
-                input_data=x,
-                reconst_loss=criterion.reconst_loss,
-                latent_loss=criterion.latent_loss,
-                model=model,
-            )
-            loss = errors["reconst"]
-            if i % latent_interval == 0:
-                loss += errors.get("kldiv", 0)
+                # データをGPUに移動
+                x = x.to(device)
+                # 損失の計算
+                errors, _ = calc_loss(
+                    input_data=x,
+                    reconst_loss=criterion.reconst_loss,
+                    latent_loss=criterion.latent_loss,
+                    model=model,
+                )
+                loss = errors["reconst"] + 1e-3 * errors.get("kldiv", 0)
+                # if i % latent_interval == 0:
+                #     loss += errors.get("kldiv", 0)
 
-            # 重みの更新
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                # 重みの更新
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            # 損失をリストに保存
-            train_losses.append(loss.cpu().item())
-            train_reconst_errors.append(errors["reconst"].cpu().item())
-            if errors.get("kldiv") is not None:
-                train_kldiv_errors.append(errors["kldiv"].cpu().item())
+                # 損失をリストに保存
+                train_losses.append(loss.cpu().item())
+                train_reconst_errors.append(errors["reconst"].cpu().item())
+                if errors.get("kldiv") is not None:
+                    train_kldiv_errors.append(errors["kldiv"].cpu().item())
 
-        # 検証
-        for x, _ in val_dataloader:
-            model.eval()
-            x = x.to(device)
-            errors, _ = calc_loss(
-                input_data=x,
-                reconst_loss=criterion.reconst_loss,
-                latent_loss=criterion.latent_loss,
-                model=model,
-            )
-            loss = errors["reconst"] + errors.get("kldiv", 0)
+            # 検証
+            for x, _ in val_dataloader:
+                model.eval()
+                x = x.to(device)
+                errors, _ = calc_loss(
+                    input_data=x,
+                    reconst_loss=criterion.reconst_loss,
+                    latent_loss=criterion.latent_loss,
+                    model=model,
+                )
+                loss = errors["reconst"] + 1e-3 * errors.get("kldiv", 0)
 
-            # 損失をリストに保存
-            valid_losses.append(loss.cpu().item())
-            valid_reconst_errors.append(errors["reconst"].cpu().item())
-            if errors.get("kldiv") is not None:
-                valid_kldiv_errors.append(errors["kldiv"].cpu().item())
+                # 損失をリストに保存
+                valid_losses.append(loss.cpu().item())
+                valid_reconst_errors.append(errors["reconst"].cpu().item())
+                if errors.get("kldiv") is not None:
+                    valid_kldiv_errors.append(errors["kldiv"].cpu().item())
 
-        # 1エポックでの損失の平均
-        mean_train_loss = _mean(train_losses)
-        mean_train_reconst_error = _mean(train_reconst_errors)
-        mean_train_kldiv_error = _mean(train_kldiv_errors)
-        mean_valid_loss = _mean(valid_losses)
-        mean_valid_reconst_error = _mean(valid_reconst_errors)
-        mean_valid_kldiv_error = _mean(valid_kldiv_errors)
+            # 1エポックでの損失の平均
+            mean_train_loss = _mean(train_losses)
+            mean_train_reconst_error = _mean(train_reconst_errors)
+            mean_train_kldiv_error = _mean(train_kldiv_errors)
+            mean_valid_loss = _mean(valid_losses)
+            mean_valid_reconst_error = _mean(valid_reconst_errors)
+            mean_valid_kldiv_error = _mean(valid_kldiv_errors)
 
-        # 損失の経過を記録
-        _write_loss_progress(
-            writer,
-            epoch,
-            mean_train_loss,
-            mean_train_reconst_error,
-            mean_train_kldiv_error,
-            mean_valid_loss,
-            mean_valid_reconst_error,
-            mean_valid_kldiv_error,
-        )
-
-        print(
-            "Epoch: {}/{}\t|Train loss: {:.5f}\t|Valid loss: {:.5f}".format(
-                epoch + 1,
-                cfg.train.train_hyperparameter.epochs,
-                mean_train_loss,
-                mean_valid_loss,
-            )
-        )
-
-        # 再構成できているかを確認する画像の保存
-        if (epoch + 1) % save_interval == 0 or epoch == 0:
-            model.eval()
-            test_output, _ = model(test_image)
-            # reconst_images.append(
-            #     vutils.make_grid(test_output, normalize=True)
-            # )
-            writer.add_image(
-                "Reconstructed_images",
-                vutils.make_grid(
-                    test_output.view(
-                        -1, 1, *cfg.model.hyper_parameters.input_size
-                    ),
-                    normalize=True,
-                ),
+            # 損失の経過を記録
+            _write_loss_progress(
+                writer,
                 epoch,
-            )
-
-        if cfg.train.train_hyperparameter.early_stopping:
-            early_stopping(
+                mean_train_loss,
+                mean_train_reconst_error,
+                mean_train_kldiv_error,
                 mean_valid_loss,
-                model,
-                save_path=model_save_path / "model_parameters.pth",
+                mean_valid_reconst_error,
+                mean_valid_kldiv_error,
             )
-            if early_stopping.early_stop:
-                break
 
-    writer.close()
+            print(
+                "Epoch: {}/{} |Train loss: {:.3f} |Valid loss: {:.3f}".format(
+                    epoch + 1,
+                    cfg.train.train_hyperparameter.epochs,
+                    mean_train_loss,
+                    mean_valid_loss,
+                )
+            )
+
+            # 再構成できているかを確認する画像の保存
+            if (epoch + 1) % save_interval == 0 or epoch == 0:
+                model.eval()
+                test_output, _ = model(test_image)
+                # reconst_images.append(
+                #     vutils.make_grid(test_output, normalize=True)
+                # )
+                writer.add_image(
+                    "Reconstructed_images",
+                    vutils.make_grid(
+                        test_output.view(
+                            -1, 1, *cfg.model.hyper_parameters.input_size
+                        ),
+                        normalize=True,
+                    ),
+                    epoch,
+                )
+
+            if cfg.train.train_hyperparameter.early_stopping:
+                early_stopping(
+                    mean_valid_loss,
+                    model,
+                    save_path=model_save_path / "model_parameters.pth",
+                )
+                if early_stopping.early_stop:
+                    break
+    except KeyboardInterrupt as e:
+        raise KeyboardInterrupt(f"Training was stopped: {e}") from e
+    finally:
+        writer.close()
+        torch.save(
+            model.state_dict(), model_save_path / "model_parameters.pth"
+        )
 
     # fig = plt.figure()
     # ax = fig.add_subplot(1, 1, 1)
@@ -273,8 +279,6 @@ def main(_cfg: DictConfig) -> None:
     #     vutils.make_grid(test_image, normalize=True),
     #     fp=figure_save_path / "test_images.png",
     # )
-
-    torch.save(model.state_dict(), model_save_path / "model_parameters.pth")
 
 
 if __name__ == "__main__":

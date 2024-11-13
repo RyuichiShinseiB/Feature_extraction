@@ -3,6 +3,7 @@ from typing import Callable, Literal
 
 # Third Party Library
 import torch
+from torch import nn
 
 # Local Library
 from .mytyping import Model, Tensor
@@ -37,9 +38,11 @@ class LossFunction:
         self.latent_loss: LatentLoss | None
 
         if reconst_loss_type == "bce":
-            self.reconst_loss = self.bce_loss
+            # self.reconst_loss = self.bce_loss
+            self.reconst_loss: nn.BCELoss | nn.MSELoss = nn.BCELoss()
         elif reconst_loss_type == "mse":
-            self.reconst_loss = self.mse_loss
+            # self.reconst_loss = self.mse_loss
+            self.reconst_loss = nn.MSELoss()
         else:
             raise ValueError("Please select another loss function")
 
@@ -68,8 +71,9 @@ class LossFunction:
         )
 
 
-class LatentLoss:
+class LatentLoss(nn.Module):
     def __init__(self, var_calc_type: Literal["softplus", "general"]) -> None:
+        super().__init__()
         if var_calc_type == "softplus":
             self.latent_loss = self.softplus_latent
         elif var_calc_type == "standard":
@@ -77,13 +81,14 @@ class LatentLoss:
         else:
             raise ValueError("'softplus' or 'general' can be selected.")
 
-    def __call__(self, mean: Tensor, std: Tensor) -> Tensor:
-        return self.latent_loss(mean, std)
+    def forward(self, mean: Tensor, var: Tensor) -> Tensor:
+        return self.latent_loss(mean, var)
 
     @staticmethod
-    def softplus_latent(mean: Tensor, std: Tensor) -> Tensor:
+    def softplus_latent(mean: Tensor, var: Tensor) -> Tensor:
         return -0.5 * torch.mean(
-            torch.sum(1 + 2 * torch_log(std) - mean**2 - std**2, dim=1)
+            # torch.sum(1 + 2 * torch_log(std) - mean**2 - std**2, dim=1)
+            torch.sum(1 + torch_log(var) - mean**2 - var, dim=1)
         )
 
     @staticmethod

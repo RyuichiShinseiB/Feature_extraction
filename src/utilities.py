@@ -6,7 +6,6 @@ from pprint import pprint
 from typing import (
     Any,
     Callable,
-    Optional,
     TypeAlias,
     TypeGuard,
     cast,
@@ -386,23 +385,20 @@ class EarlyStopping:
         self.patience = patience
         self.verbose = verbose
         self.counter: int = 0
-        self.best_score: Optional[float] = None
+        self.best_score: float = float("inf")
         self.early_stop: bool = False
-        self.val_loss_min: float = np.Inf
+        self.val_loss_min: float = float("inf")
         self.force_cancel: bool = False
 
     def __call__(
         self,
         val_loss: float | Any,
         model: Model,
-        save_path: Optional[str | Path],
+        save_path: str | Path,
     ) -> None:
         score: float = -val_loss
 
-        if self.best_score is None:
-            self.best_score = score
-            self.save_checkpoint(val_loss, model, save_path)
-        elif score < self.best_score:
+        if score < self.best_score:
             self.counter += 1
             print(
                 f"EarlyStopping counter: {self.counter} out of {self.patience}"
@@ -418,7 +414,7 @@ class EarlyStopping:
         self,
         val_loss: float | Any,
         model: Model,
-        save_path: Optional[str | Path],
+        save_path: str | Path = "model_parameters.pth",
     ) -> None:
         if self.verbose:
             print(
@@ -426,11 +422,6 @@ class EarlyStopping:
                 f"({self.val_loss_min:.3f} --> {val_loss:.3f}). \n",
                 "Saving model ...",
             )
-        save_path = (
-            "./model/model_parameters_EA.pth"
-            if save_path is None
-            else save_path
-        )
         torch.save(model.state_dict(), save_path)
         self.val_loss_min = val_loss
 

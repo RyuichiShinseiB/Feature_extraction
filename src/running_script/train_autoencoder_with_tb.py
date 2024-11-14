@@ -110,7 +110,7 @@ def main(_cfg: DictConfig) -> None:
     # Early stoppingの宣言
     # 過学習を防ぐためにepochの途中で終了する
     # Declaration of Early stopping
-    early_stopping = EarlyStopping()
+    early_stopping = EarlyStopping(patience=50)
 
     # データローダーを設定
     # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、  # noqa: E501

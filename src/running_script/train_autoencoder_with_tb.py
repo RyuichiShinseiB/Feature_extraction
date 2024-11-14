@@ -152,7 +152,7 @@ def main(_cfg: DictConfig) -> None:
 
     try:
         # バックグラウンド実行の際に強制終了させるときに例外を発生させる。
-        CatchSIGTERM.signal_handling()
+        CatchSIGTERM.start_signal_handling()
         # Training start
         for epoch in range(cfg.train.train_hyperparameter.epochs):
             train_losses: list[float] = []

@@ -11,7 +11,9 @@ from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 
 from src.configs.model_configs import TrainAutoencoderConfig
+from src.exception import CatchSIGTERM
 from src.loss_function import LossFunction, calc_loss
+from src.mytyping import Tensor
 from src.predefined_models import model_define
 from src.utilities import (
     EarlyStopping,
@@ -25,6 +27,19 @@ def _mean(vals: list[float]) -> float:
     if vals == []:
         return float("nan")
     return sum(vals) / len(vals)
+
+
+def _weight(val: Tensor) -> float:
+    if val < 0.3:
+        return 1e-2
+    if val < 0.5:
+        return 1e-3
+    if val < 0.7:
+        return 1e-4
+    if val < 0.9:
+        return 1e-5
+    else:
+        return 0.0
 
 
 def _write_loss_progress(
@@ -136,6 +151,8 @@ def main(_cfg: DictConfig) -> None:
     )
 
     try:
+        # バックグラウンド実行の際に強制終了させるときに例外を発生させる。
+        CatchSIGTERM.signal_handling()
         # Training start
         for epoch in range(cfg.train.train_hyperparameter.epochs):
             train_losses: list[float] = []
@@ -160,7 +177,9 @@ def main(_cfg: DictConfig) -> None:
                     latent_loss=criterion.latent_loss,
                     model=model,
                 )
-                loss = errors["reconst"] + 1e-3 * errors.get("kldiv", 0)
+                loss = errors["reconst"] + _weight(
+                    errors["reconst"]
+                ) * errors.get("kldiv", 0)
                 # if i % latent_interval == 0:
                 #     loss += errors.get("kldiv", 0)
 
@@ -185,7 +204,9 @@ def main(_cfg: DictConfig) -> None:
                     latent_loss=criterion.latent_loss,
                     model=model,
                 )
-                loss = errors["reconst"] + 1e-3 * errors.get("kldiv", 0)
+                loss = errors["reconst"] + _weight(
+                    errors["reconst"]
+                ) * errors.get("kldiv", 0)
 
                 # 損失をリストに保存
                 valid_losses.append(loss.cpu().item())
@@ -248,8 +269,8 @@ def main(_cfg: DictConfig) -> None:
                 )
                 if early_stopping.early_stop:
                     break
-    except KeyboardInterrupt as e:
-        raise KeyboardInterrupt(f"Training was stopped: {e}") from e
+    except (KeyboardInterrupt, CatchSIGTERM) as e:
+        raise Exception(f"Training was stopped: {e}") from e
     finally:
         writer.close()
         torch.save(

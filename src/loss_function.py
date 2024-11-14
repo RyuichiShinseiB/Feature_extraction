@@ -1,5 +1,5 @@
 # Standard Library
-from typing import Callable, Literal
+from typing import Callable, Literal, overload
 
 # Third Party Library
 import torch
@@ -29,12 +29,13 @@ def calc_loss(
     return loss, x_pred
 
 
-class LossFunction:
+class LossFunction(nn.Module):
     def __init__(
         self,
         reconst_loss_type: Literal["bce", "mse", "None"],
         var_calc_type: Literal["softplus", "general"] | None,
     ) -> None:
+        super().__init__()
         self.latent_loss: LatentLoss | None
 
         if reconst_loss_type == "bce":
@@ -51,24 +52,58 @@ class LossFunction:
         else:
             self.latent_loss = None
 
-    @staticmethod
-    def bce_loss(reconst_data: Tensor, input_data: Tensor) -> Tensor:
-        return -torch.mean(
-            torch.sum(
-                input_data * torch_log(reconst_data)
-                + (1 - input_data) * torch_log(1 - reconst_data),
-                dim=1,
+    @overload
+    def forward(self, pred: Tensor, t: Tensor) -> tuple[Tensor, None]:
+        ...
+
+    @overload
+    def forward(
+        self, pred: Tensor, t: Tensor, latent_params: tuple[Tensor, Tensor]
+    ) -> tuple[Tensor, Tensor]:
+        ...
+
+    def forward(
+        self,
+        pred: Tensor,
+        t: Tensor,
+        latent_params: tuple[Tensor, Tensor] | None = None,
+    ) -> tuple[Tensor, Tensor | None]:
+        reconst_error: Tensor = self.reconst_loss(pred, t)
+        if self.latent_loss is not None and latent_params is not None:
+            kldiv = self.latent_loss.forward(
+                latent_params[0], latent_params[1]
             )
-        )
+            return reconst_error, kldiv
+        return reconst_error, None
 
     @staticmethod
-    def mse_loss(reconst_data: Tensor, input_data: Tensor) -> Tensor:
-        return -torch.mean(
-            torch.sum(
-                (reconst_data - input_data) ** 2,
-                dim=1,
-            )
-        )
+    def weighting(val: Tensor | None) -> Tensor | int:
+        if val is None:
+            return 0
+
+        if val < 0.2:
+            weight = 1.0
+        elif val < 0.4:
+            weight = 1e-2
+        elif val < 0.6:
+            weight = 1e-4
+        elif val < 0.8:
+            weight = 1e-6
+        else:
+            weight = 1e-8
+
+        # if val < 0.3:
+        #     weight = 1e-4
+        # elif val < 0.5:
+        #     weight = 1e-5
+        # elif val < 0.7:
+        #     weight = 1e-6
+        # elif val < 0.9:
+        #     weight = 1e-7
+        # else:
+        #     weight = 0.0
+
+        return weight * val
 
 
 class LatentLoss(nn.Module):
@@ -86,13 +121,8 @@ class LatentLoss(nn.Module):
 
     @staticmethod
     def softplus_latent(mean: Tensor, var: Tensor) -> Tensor:
-        return -0.5 * torch.mean(
-            # torch.sum(1 + 2 * torch_log(std) - mean**2 - std**2, dim=1)
-            torch.sum(1 + torch_log(var) - mean**2 - var, dim=1)
-        )
+        return -0.5 * torch.sum(1 + var.log() - var - mean**2)
 
     @staticmethod
     def general_latent(mean: Tensor, log_var: Tensor) -> Tensor:
-        return -0.5 * torch.mean(
-            torch.sum(1 + log_var - mean**2 - log_var.exp(), dim=1)
-        )
+        return -0.5 * torch.mean(1 + log_var - mean**2 - log_var.exp())

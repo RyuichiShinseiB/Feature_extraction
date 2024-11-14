@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.configs.model_configs import TrainAutoencoderConfig
 from src.exception import CatchSIGTERM
-from src.loss_function import LossFunction, calc_loss
+from src.loss_function import LossFunction
 from src.mytyping import Tensor
 from src.predefined_models import model_define
 from src.utilities import (
@@ -174,16 +174,7 @@ def main(_cfg: DictConfig) -> None:
                 reconst, latent_params = model(x)
                 # 損失の計算
                 errors = criterion.forward(reconst, x, latent_params)
-                loss = errors[0] * criterion.weighting(errors[1])
-                errors, _ = calc_loss(
-                    input_data=x,
-                    reconst_loss=criterion.reconst_loss,
-                    latent_loss=criterion.latent_loss,
-                    model=model,
-                )
-                loss = errors["reconst"] + _weight(
-                    errors["reconst"]
-                ) * errors.get("kldiv", 0)
+                loss = errors[0] + criterion.weighting(errors[0])
                 # if i % latent_interval == 0:
                 #     loss += errors.get("kldiv", 0)
 
@@ -194,29 +185,23 @@ def main(_cfg: DictConfig) -> None:
 
                 # 損失をリストに保存
                 train_losses.append(loss.cpu().item())
-                train_reconst_errors.append(errors["reconst"].cpu().item())
-                if errors.get("kldiv") is not None:
-                    train_kldiv_errors.append(errors["kldiv"].cpu().item())
+                train_reconst_errors.append(errors[0].cpu().item())
+                if errors[1] is not None:
+                    train_kldiv_errors.append(errors[1].cpu().item())
 
             # 検証
             for x, _ in val_dataloader:
                 model.eval()
                 x = x.to(device)
-                errors, _ = calc_loss(
-                    input_data=x,
-                    reconst_loss=criterion.reconst_loss,
-                    latent_loss=criterion.latent_loss,
-                    model=model,
-                )
-                loss = errors["reconst"] + _weight(
-                    errors["reconst"]
-                ) * errors.get("kldiv", 0)
+                reconst, latent_params = model(x)
+                errors = criterion.forward(reconst, x, latent_params)
+                loss = errors[0] + criterion.weighting(errors[0])
 
                 # 損失をリストに保存
                 valid_losses.append(loss.cpu().item())
-                valid_reconst_errors.append(errors["reconst"].cpu().item())
-                if errors.get("kldiv") is not None:
-                    valid_kldiv_errors.append(errors["kldiv"].cpu().item())
+                valid_reconst_errors.append(errors[0].cpu().item())
+                if errors[1] is not None:
+                    valid_kldiv_errors.append(errors[1].cpu().item())
 
             # 1エポックでの損失の平均
             mean_train_loss = _mean(train_losses)

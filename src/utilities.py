@@ -385,7 +385,7 @@ class EarlyStopping:
         self.patience = patience
         self.verbose = verbose
         self.counter: int = 0
-        self.best_score: float = float("inf")
+        self.best_score: float = -float("inf")
         self.early_stop: bool = False
         self.val_loss_min: float = float("inf")
         self.force_cancel: bool = False

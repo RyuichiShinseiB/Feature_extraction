@@ -373,16 +373,14 @@ class ResNetVAE(nn.Module):
             reconstructed_size=input_size,
         )
 
-    def forward(
-        self, x: Tensor
-    ) -> tuple[Tensor, tuple[Tensor, Tensor, Tensor]]:
+    def forward(self, x: Tensor) -> tuple[Tensor, tuple[Tensor, Tensor]]:
         x, output_size_conv1, indices = self.encoder.forward(x)
         mean = self.mean_layer(x)
         var = self.var_layer(x)
         z = self.reparametarization(mean, var)
 
-        x = self.decoder.forward(z, output_size_conv1, indices)
-        return x, (z, mean, var)
+        x = self.decoder(z, output_size_conv1, indices)
+        return x, (mean, var)
 
     @staticmethod
     def reparametarization(mean: Tensor, var: Tensor) -> Tensor:

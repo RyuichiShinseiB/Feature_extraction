@@ -174,7 +174,7 @@ def main(_cfg: DictConfig) -> None:
                 reconst, latent_params = model(x)
                 # 損失の計算
                 errors = criterion.forward(reconst, x, latent_params)
-                loss = errors[0] + criterion.weight(errors[0]) * errors[1]
+                loss = errors[0] + criterion.calc_weight(errors[0]) * errors[1]
                 # if i % latent_interval == 0:
                 #     loss += errors.get("kldiv", 0)
 
@@ -195,7 +195,7 @@ def main(_cfg: DictConfig) -> None:
                 x = x.to(device)
                 reconst, latent_params = model(x)
                 errors = criterion.forward(reconst, x, latent_params)
-                loss = errors[0] + criterion.weight(errors[0]) * errors[1]
+                loss = errors[0] + criterion.calc_weight(errors[0]) * errors[1]
 
                 # 損失をリストに保存
                 valid_losses.append(loss.cpu().item())
@@ -249,6 +249,7 @@ def main(_cfg: DictConfig) -> None:
                     ),
                     epoch + 1,
                 )
+                writer.flush()
 
             if cfg.train.train_hyperparameter.early_stopping:
                 early_stopping(

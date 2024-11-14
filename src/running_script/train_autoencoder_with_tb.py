@@ -30,14 +30,15 @@ def _mean(vals: list[float]) -> float:
 
 
 def _weight(val: Tensor) -> float:
+    print(val)
     if val < 0.3:
-        return 1e-2
-    if val < 0.5:
-        return 1e-3
-    if val < 0.7:
         return 1e-4
-    if val < 0.9:
+    elif val < 0.5:
         return 1e-5
+    elif val < 0.7:
+        return 1e-6
+    elif val < 0.9:
+        return 1e-7
     else:
         return 0.0
 
@@ -170,7 +171,10 @@ def main(_cfg: DictConfig) -> None:
 
                 # データをGPUに移動
                 x = x.to(device)
+                reconst, latent_params = model(x)
                 # 損失の計算
+                errors = criterion.forward(reconst, x, latent_params)
+                loss = errors[0] * criterion.weighting(errors[1])
                 errors, _ = calc_loss(
                     input_data=x,
                     reconst_loss=criterion.reconst_loss,

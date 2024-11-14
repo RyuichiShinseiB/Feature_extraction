@@ -237,7 +237,7 @@ def display_cfg(
     if isinstance(cfg, (TrainAutoencoderConfig, TrainMAEViTConfig)):
         pprint(asdict(cfg))
     elif isinstance(cfg, DictConfig):
-        print(OmegaConf.to_yaml(cfg))
+        print(OmegaConf.to_yaml(cfg, resolve=True))
 
 
 def save_onnx(

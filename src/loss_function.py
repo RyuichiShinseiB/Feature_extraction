@@ -77,18 +77,18 @@ class LossFunction(nn.Module):
         return reconst_error, None
 
     @staticmethod
-    def weighting(val: Tensor | None) -> Tensor | int:
+    def calc_weight(val: Tensor | None) -> float:
         if val is None:
             return 0
 
         if val < 0.2:
-            weight = 1.0
-        elif val < 0.4:
-            weight = 1e-2
-        elif val < 0.6:
             weight = 1e-4
-        elif val < 0.8:
+        elif val < 0.4:
+            weight = 1e-5
+        elif val < 0.6:
             weight = 1e-6
+        elif val < 0.8:
+            weight = 1e-7
         else:
             weight = 1e-8
 
@@ -103,7 +103,7 @@ class LossFunction(nn.Module):
         # else:
         #     weight = 0.0
 
-        return weight * val
+        return weight
 
 
 class LatentLoss(nn.Module):

@@ -25,10 +25,10 @@ from torchvision.datasets.folder import find_classes, make_dataset, pil_loader
 from torchvision.transforms import transforms
 from tqdm import tqdm
 
-from .configs.model_configs import TrainAutoencoderConfig, TrainMAEViTConfig
+from ..configs.model_configs import TrainAutoencoderConfig, TrainMAEViTConfig
 
 # Local Library
-from .mytyping import (
+from ..mytyping import (
     Device,
     Model,
     Tensor,
@@ -36,7 +36,7 @@ from .mytyping import (
     TransformsName,
     TransformsNameValue,
 )
-from .predefined_models import model_define
+from ..predefined_models import model_define
 
 IMG_EXTENSIONS = (
     ".jpg",

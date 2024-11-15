@@ -75,7 +75,7 @@ def main(_cfg: DictConfig) -> None:
         shuffle=True,
         split_ratio=(0.8, 0.2),
         generator_seed=42,
-    )
+    )  # type: ignore
 
     # 損失関数の設定
     criterion = LossFunction(
@@ -116,12 +116,12 @@ def main(_cfg: DictConfig) -> None:
 
             # 重みの更新
             optimizer.zero_grad()
-            loss.backward()
+            loss["reconst"].backward()
             optimizer.step()
 
             # 損失をリストに保存
-            train_losses.append(loss.cpu().item())
-            train_loss += loss.cpu().item()
+            train_losses.append(loss["reconst"].cpu().item())
+            train_loss += loss["reconst"].cpu().item()
 
         # 検証
         for _i_valid, (x, _) in enumerate(val_dataloader, 0):
@@ -135,8 +135,8 @@ def main(_cfg: DictConfig) -> None:
             )
 
             # 損失をリストに保存
-            valid_losses.append(loss.cpu().item())
-            valid_loss += loss.cpu().item()
+            valid_losses.append(loss["reconst"].cpu().item())
+            valid_loss += loss["reconst"].cpu().item()
 
         print(
             "Epoch: {}/{}\t|Train loss: {:.5f}\t|Valid loss: {:.5f}".format(

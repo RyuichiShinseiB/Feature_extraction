@@ -13,7 +13,6 @@ from torch.utils.tensorboard import SummaryWriter
 from src.configs.model_configs import TrainAutoencoderConfig
 from src.exception import CatchSIGTERM
 from src.loss_function import LossFunction
-from src.mytyping import Tensor
 from src.predefined_models import model_define
 from src.utilities import (
     EarlyStopping,
@@ -27,20 +26,6 @@ def _mean(vals: list[float]) -> float:
     if vals == []:
         return float("nan")
     return sum(vals) / len(vals)
-
-
-def _weight(val: Tensor) -> float:
-    print(val)
-    if val < 0.3:
-        return 1e-4
-    elif val < 0.5:
-        return 1e-5
-    elif val < 0.7:
-        return 1e-6
-    elif val < 0.9:
-        return 1e-7
-    else:
-        return 0.0
 
 
 def _write_loss_progress(

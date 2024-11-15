@@ -16,7 +16,7 @@ from src.utilities import extract_features, get_dataloader
 @hydra.main(
     version_base=None,
     config_path="../configs/predict_conf",
-    config_name="autoencoder",
+    config_name="ResNetVAE",
 )
 def main(_cfg: DictConfig) -> None:
     cfg = ExtractConfig.from_dictconfig(_cfg)
@@ -26,7 +26,9 @@ def main(_cfg: DictConfig) -> None:
     base_save_path = Path(cfg.train.trained_save_path)
     model_save_path = "./models" / base_save_path / "model_parameters.pth"
     feature_storing_path = "./reports/features" / base_save_path
-    print(f"Path to store features {feature_storing_path}")
+    if not feature_storing_path.exists():
+        feature_storing_path.mkdir(parents=True)
+    print(f"Path to store features: {feature_storing_path}")
 
     # 事前学習済みのモデルのロード
     # Load pretrained model

@@ -45,7 +45,7 @@ class VariationalEncoder(nn.Module):
             ),
             add_activation(output_activation),
         )
-        self.l7_std = nn.Sequential(
+        self.l7_var = nn.Sequential(
             nn.Linear(
                 latent_dimensions,
                 latent_dimensions,
@@ -62,9 +62,9 @@ class VariationalEncoder(nn.Module):
         h = torch.flatten(h, start_dim=1)
         h = self.l6(h)
         mean = self.l7_mean(h)
-        std = self.l7_std(h)
+        var = self.l7_var(h)
 
-        return mean, std
+        return mean, var
 
 
 ######################################################
@@ -140,18 +140,16 @@ class SimpleCVAEsoftplus32(nn.Module):
             device,
         )
 
-    def forward(
-        self, x: Tensor
-    ) -> tuple[Tensor, tuple[Tensor, Tensor, Tensor]]:
-        mean, std = self.encoder(x)
-        z = self.reparameterization(mean, std)
+    def forward(self, x: Tensor) -> tuple[Tensor, tuple[Tensor, Tensor]]:
+        mean, var = self.encoder(x)
+        z = self.reparameterization(mean, var)
         x_pred = self.decoder(z.view(-1, z.shape[1], 1, 1))
 
-        return x_pred, (z, mean, std)
+        return x_pred, (mean, var)
 
-    def reparameterization(self, mean: Tensor, std: Tensor) -> Tensor:
+    def reparameterization(self, mean: Tensor, var: Tensor) -> Tensor:
         eps = torch.randn(mean.shape, device=self.device)
-        return mean + eps * std
+        return mean + eps * var.sqrt()
 
 
 if __name__ == "__main__":

@@ -45,6 +45,9 @@ name = "torch_cu118"
 url = "https://download.pytorch.org/whl/cu118"
 priority = "explicit"
 
+[tool.poetry.scripts]
+export_log = "src.utilities.export_tb_log:run"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -101,3 +104,6 @@ skip-magic-trailing-comma = false
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]

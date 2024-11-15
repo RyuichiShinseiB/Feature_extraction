@@ -2,12 +2,12 @@ model:
   name: ResNetVAE
   hyper_parameters:
     input_channels: 1
-    latent_dimensions: 16   # default: 128
+    latent_dimensions: 32   # default: 128
     encoder_base_channels: 64
     decoder_base_channels: 64
     encoder_activation: "selu"
     decoder_activation: "selu"
-    encoder_output_activation: "selu"
+    encoder_output_activation: "tanh"
     decoder_output_activation: "sigmoid"
     block_name: "basicblock"
     input_size:
@@ -17,17 +17,17 @@ model:
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
-    lr: 1.0e-3
-    epochs: 10
-    batch_size: 128
+    lr: 1.0e-4
+    epochs: 1000
+    batch_size: 64
     reconst_loss: bce
-    latent_loss: null
-    num_save_reconst_image: 10
+    latent_loss: softplus
+    num_save_reconst_image: 100
     early_stopping: True
 
 dataset:
   image_target: CNTForest
-  path: ./data/processed/CNTForest/cnt_sem_64x64/10k
+  path: ./data/processed/CNTForest/cnt_sem_32x32/10k
   transform:
     Grayscale: 1
     RandomHorizontalFlip: 0.5

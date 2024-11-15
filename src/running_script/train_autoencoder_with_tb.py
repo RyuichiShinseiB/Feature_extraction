@@ -75,7 +75,8 @@ def _write_loss_progress(
 @hydra.main(
     version_base=None,
     config_path="../configs/train_conf",
-    config_name="ResNetVAE",
+    # config_name="ResNetVAE",
+    config_name="SimpleCVAE",
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
@@ -242,9 +243,10 @@ def main(_cfg: DictConfig) -> None:
                 writer.add_image(
                     "Reconstructed_images",
                     vutils.make_grid(
-                        test_output.view(
-                            -1, 1, *cfg.model.hyper_parameters.input_size
-                        ),
+                        # test_output.view(
+                        #     -1, 1, *cfg.model.hyper_parameters.input_size
+                        # ),
+                        test_output,
                         normalize=True,
                     ),
                     epoch + 1,
@@ -255,7 +257,8 @@ def main(_cfg: DictConfig) -> None:
                 early_stopping(
                     mean_valid_loss,
                     model,
-                    save_path=model_save_path / "model_parameters.pth",
+                    save_path=model_save_path
+                    / "early_stopped_model_parameters.pth",
                 )
                 if early_stopping.early_stop:
                     break

@@ -82,15 +82,15 @@ class LossFunction(nn.Module):
             return 0
 
         if val < 0.2:
-            weight = 1e-4
+            weight = 1e-2
         elif val < 0.4:
-            weight = 1e-5
+            weight = 1e-3
         elif val < 0.6:
-            weight = 1e-6
+            weight = 1e-4
         elif val < 0.8:
-            weight = 1e-7
+            weight = 1e-5
         else:
-            weight = 1e-8
+            weight = 1e-6
 
         # if val < 0.3:
         #     weight = 1e-4
@@ -125,4 +125,4 @@ class LatentLoss(nn.Module):
 
     @staticmethod
     def general_latent(mean: Tensor, log_var: Tensor) -> Tensor:
-        return -0.5 * torch.mean(1 + log_var - mean**2 - log_var.exp())
+        return -0.5 * torch.mean(1 + log_var - log_var.exp() - mean**2)

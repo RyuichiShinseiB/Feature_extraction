@@ -1,0 +1,36 @@
+model:
+  name: SimpleCVAE_softplus32
+  hyper_parameters:
+    input_channels: 1
+    latent_dimensions: 32   # default: 128
+    encoder_base_channels: 64
+    decoder_base_channels: 64
+    encoder_activation: "selu"
+    decoder_activation: "selu"
+    encoder_output_activation: "tanh"
+    decoder_output_activation: "sigmoid"
+
+train:
+  trained_save_path: ${model.name}/2024-11-15/10-39-52
+  train_hyperparameter:
+    lr: 1.0e-4
+    epochs: 1000
+    batch_size: 64
+    reconst_loss: bce
+    latent_loss: softplus
+    num_save_reconst_image: 100
+    early_stopping: True
+
+dataset:
+  image_target: CNTForest
+  train_path: ./data/processed/CNTForest/cnt_sem_32x32/10k
+  check_path: ./data/processed/check/CNTForest/cnt_sem_for_check_32x32/10k
+  transform:
+    Grayscale: 1
+    ToTensor: 0
+
+feature_save_path: ${train.trained_save_path}
+
+hydra:
+  run:
+    dir: ./reports/features/${train.trained_save_path}

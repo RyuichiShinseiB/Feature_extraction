@@ -363,10 +363,7 @@ class ForExtractFolder(VisionDataset):
         return cast(tuple[list[str], dict[str, int]], found_classes)
 
     def __getitem__(self, index: int) -> tuple[Tensor, int, str, str]:
-        (
-            path,
-            target,
-        ) = self.samples[index]
+        path, target = self.samples[index]
 
         fname = path.split("/")[-1]
         dirname = path.split("/")[-2]

@@ -28,7 +28,6 @@ dataset:
   check_path: data/processed/check/CNTForest/cnt_sem_for_check_64x64/10k
   transform:
     Grayscale: 1
-    RandomHorizontalFlip: 0.5
     ToTensor: 0
 # model:
 #   name: SimpleCVAE_softplus32

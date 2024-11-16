@@ -3,6 +3,7 @@ from pathlib import Path
 
 # Third Party Library
 import matplotlib
+import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
@@ -14,7 +15,7 @@ def scatter_each_classes(
     class_labels: np.ndarray,
     rank: np.ndarray,
     markers: list[str],
-    colors: list[str],
+    colors: list[str] | list[tuple[float, float, float, float]],
     xylabel: tuple[str, str],
     face_color: str = "valid",
     scatter_classes: list[int] | None = None,

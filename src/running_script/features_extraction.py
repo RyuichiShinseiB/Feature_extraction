@@ -16,7 +16,7 @@ from src.utilities import extract_features, get_dataloader
 @hydra.main(
     version_base=None,
     config_path="../configs/predict_conf",
-    config_name="ResNetVAE",
+    config_name="SimpleCVAE",
 )
 def main(_cfg: DictConfig) -> None:
     cfg = ExtractConfig.from_dictconfig(_cfg)

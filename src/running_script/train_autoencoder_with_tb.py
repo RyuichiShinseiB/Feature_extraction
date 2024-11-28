@@ -11,7 +11,6 @@ from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 
 from src.configs.model_configs import TrainAutoencoderConfig
-from src.exception import CatchSIGTERM
 from src.loss_function import LossFunction
 from src.predefined_models import model_define
 from src.utilities import (
@@ -60,8 +59,8 @@ def _write_loss_progress(
 @hydra.main(
     version_base=None,
     config_path="../configs/train_conf",
-    # config_name="ResNetVAE",
-    config_name="SimpleCVAE",
+    config_name="ResNetVAE",
+    # config_name="SimpleCVAE",
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
@@ -138,8 +137,6 @@ def main(_cfg: DictConfig) -> None:
     )
 
     try:
-        # バックグラウンド実行の際に強制終了させるときに例外を発生させる。
-        CatchSIGTERM.start_signal_handling()
         # Training start
         for epoch in range(cfg.train.train_hyperparameter.epochs):
             train_losses: list[float] = []
@@ -149,6 +146,9 @@ def main(_cfg: DictConfig) -> None:
             valid_losses: list[float] = []
             valid_reconst_errors: list[float] = []
             valid_kldiv_errors: list[float] = []
+            valid_latent_means: list[torch.Tensor] = []
+            valid_classes: list[torch.Tensor] = []
+            valid_reconst_images: list[torch.Tensor] = []
 
             # 訓練
             for i, (x, _) in enumerate(train_dataloader, 1):
@@ -176,7 +176,7 @@ def main(_cfg: DictConfig) -> None:
                     train_kldiv_errors.append(errors[1].cpu().item())
 
             # 検証
-            for x, _ in val_dataloader:
+            for x, classes in val_dataloader:
                 model.eval()
                 x = x.to(device)
                 reconst, latent_params = model(x)
@@ -188,6 +188,9 @@ def main(_cfg: DictConfig) -> None:
                 valid_reconst_errors.append(errors[0].cpu().item())
                 if errors[1] is not None:
                     valid_kldiv_errors.append(errors[1].cpu().item())
+                valid_latent_means.append(latent_params[0])
+                valid_classes.append(classes)
+                valid_reconst_images.append(reconst)
 
             # 1エポックでの損失の平均
             mean_train_loss = _mean(train_losses)
@@ -222,19 +225,20 @@ def main(_cfg: DictConfig) -> None:
             if (epoch + 1) % save_interval == 0 or epoch == 0:
                 model.eval()
                 test_output, _ = model(test_image)
-                # reconst_images.append(
-                #     vutils.make_grid(test_output, normalize=True)
-                # )
                 writer.add_image(
                     "Reconstructed_images",
                     vutils.make_grid(
-                        # test_output.view(
-                        #     -1, 1, *cfg.model.hyper_parameters.input_size
-                        # ),
                         test_output,
                         normalize=True,
                     ),
                     epoch + 1,
+                )
+
+                writer.add_embedding(
+                    torch.concat(valid_latent_means),
+                    metadata=torch.concat(valid_classes),
+                    global_step=epoch,
+                    tag="DistributionOnLatentSpace",
                 )
                 writer.flush()
 
@@ -247,8 +251,8 @@ def main(_cfg: DictConfig) -> None:
                 )
                 if early_stopping.early_stop:
                     break
-    except (KeyboardInterrupt, CatchSIGTERM) as e:
-        raise Exception(f"Training was stopped: {e}") from e
+    except KeyboardInterrupt as e:
+        raise KeyboardInterrupt(f"Training was stopped: {e}") from e
     finally:
         writer.close()
         torch.save(

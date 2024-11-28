@@ -318,6 +318,17 @@ def is_tuple_of_ints(
     return all(isinstance(item, int) for item in value)
 
 
+def find_project_root(
+    start_path: Path = Path.cwd(), marker: str = "pyproject.toml"
+) -> Path:
+    current_path = start_path
+    while current_path != current_path.parent:
+        if (current_path / marker).exists():
+            return current_path
+        current_path = current_path.parent
+    raise FileNotFoundError(f"{marker} not found in any parent directories.")
+
+
 class ForExtractFolder(VisionDataset):
     def __init__(
         self,

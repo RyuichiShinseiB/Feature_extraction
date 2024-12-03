@@ -1,5 +1,7 @@
 # Standard Library
+from collections.abc import Sequence
 from pathlib import Path
+from typing import overload
 
 # Third Party Library
 import matplotlib
@@ -7,15 +9,30 @@ import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
+from matplotlib.axes import Axes
+from matplotlib.collections import PathCollection
+from matplotlib.container import BarContainer
+from matplotlib.figure import Figure
+from matplotlib.typing import ColorType, MarkerType
 from PIL import Image
+
+
+def set_mpl_styles() -> None:
+    plt.rcParams["font.family"] = "Times New Roman"
+    plt.rcParams["mathtext.fontset"] = "stix"
+    plt.rcParams["font.size"] = 15
+    plt.rcParams["xtick.direction"] = "in"
+    plt.rcParams["ytick.direction"] = "in"
+    plt.rcParams["axes.grid"] = True
+    plt.rcParams["axes.axisbelow"] = True
 
 
 def scatter_each_classes(
     data: np.ndarray,
     class_labels: np.ndarray,
     rank: np.ndarray,
-    markers: list[str],
-    colors: list[str] | list[tuple[float, float, float, float]],
+    markers: Sequence[MarkerType],
+    colors: Sequence[ColorType],
     xylabel: tuple[str, str],
     face_color: str = "valid",
     scatter_classes: list[int] | None = None,
@@ -137,9 +154,9 @@ def concat_images(
 
 def image_concat_and_imshow(
     df: pl.DataFrame,
-    labels: list[int] | np.ndarray,
     col_row: tuple[int, int],
     image_root: str | Path,
+    labels: list[int] | np.ndarray | None = None,
     figsize: tuple[float, float] | None = None,
 ) -> tuple[list[Image.Image], pl.DataFrame]:
     if not isinstance(image_root, Path):
@@ -147,12 +164,13 @@ def image_concat_and_imshow(
 
     used_filepaths: list[pl.DataFrame] = []
     concat_imgs: list[Image.Image] = []
-    num_labels = len(np.unique(labels))
+    if labels is None:
+        labels = df.select("cluster").to_numpy().flatten()
 
     for label in np.unique(labels):
-        imgs: list[Image.Image] = []
         hoge = df.filter(pl.col("cluster") == label)
 
+        # 該当するクラスタのデータが少ない場合の処理
         if len(hoge) > col_row[0] * col_row[1]:
             data_using_img_load = hoge.sample(col_row[0] * col_row[1])
         else:
@@ -166,13 +184,13 @@ def image_concat_and_imshow(
         file_paths = (
             data_using_img_load.select("filepath").to_numpy().flatten()
         )
-        for p in file_paths:
-            imgs.append(Image.open(image_root / p))
+        imgs = [Image.open(image_root / p) for p in file_paths]
+        print(f"{label}: {len(imgs)=}")
         concat_imgs.append(concat_images(imgs, col_row[0], col_row[1], 2))
 
-    fig = plt.figure(figsize=None if figsize is None else figsize)
+    fig = plt.figure(figsize=figsize, layout="constrained")
 
-    for i in range(num_labels):
+    for i in labels:
         ax = fig.add_subplot(2, 5, i + 1)
         ax.imshow(concat_imgs[i], "gray")
         ax.set_title(f"cluster {i}")
@@ -181,3 +199,160 @@ def image_concat_and_imshow(
     plt.show()
 
     return concat_imgs, pl.concat(used_filepaths)
+
+
+@overload
+def plot_scatter(
+    data: Sequence[np.ndarray] | np.ndarray,
+) -> tuple[Figure, Axes, PathCollection]:
+    ...
+
+
+@overload
+def plot_scatter(
+    data: Sequence[np.ndarray] | np.ndarray,
+    ax: Axes | None = None,
+) -> tuple[Axes, PathCollection]:
+    ...
+
+
+@overload
+def plot_scatter(
+    data: Sequence[np.ndarray] | np.ndarray,
+    *,
+    size: float = 20,
+    color: ColorType = "tab:blue",
+    marker: MarkerType = "o",
+    zorder: float = 0,
+    scatter_label: str | None = None,
+    axis_labels: tuple[str, str] | None = None,
+) -> tuple[Figure, Axes, PathCollection]:
+    ...
+
+
+@overload
+def plot_scatter(
+    data: Sequence[np.ndarray] | np.ndarray,
+    ax: Axes | None = None,
+    *,
+    size: float = 20,
+    color: ColorType = "tab:blue",
+    marker: MarkerType = "o",
+    zorder: float = 0,
+    scatter_label: str | None = None,
+    axis_labels: tuple[str, str] | None = None,
+) -> tuple[Axes, PathCollection]:
+    ...
+
+
+def plot_scatter(
+    data: Sequence[np.ndarray] | np.ndarray,
+    ax: Axes | None = None,
+    *,
+    size: float = 20,
+    color: ColorType = "tab:blue",
+    marker: MarkerType = "o",
+    zorder: float = 0,
+    scatter_label: str | None = None,
+    axis_labels: tuple[str, str] | None = None,
+) -> tuple[Axes, PathCollection] | tuple[Figure, Axes, PathCollection]:
+    fig = None
+    if ax is None:
+        fig = plt.figure(layout="constrained")
+        ax = fig.add_subplot()
+    pc = ax.scatter(
+        data[0],
+        data[1],
+        s=size,
+        marker=marker,
+        facecolor="None",
+        edgecolors=color,
+        label=scatter_label,
+        zorder=zorder,
+    )
+    x_range = ax.get_xlim()
+    y_range = ax.get_ylim()
+    plot_range = np.max((*x_range, *y_range))
+    ax.set_xlim(-plot_range, plot_range)
+    ax.set_ylim(-plot_range, plot_range)
+    if axis_labels is not None:
+        ax.set_xlabel(axis_labels[0])
+        ax.set_ylabel(axis_labels[1])
+    ax.set_aspect("equal")
+    if fig is None:
+        return ax, pc
+    else:
+        return fig, ax, pc
+
+
+@overload
+def plot_bar(
+    data: Sequence[np.ndarray] | np.ndarray,
+) -> tuple[Figure, Axes, BarContainer]:
+    ...
+
+
+@overload
+def plot_bar(
+    data: Sequence[np.ndarray] | np.ndarray,
+    ax: Axes,
+) -> tuple[Axes, BarContainer]:
+    ...
+
+
+@overload
+def plot_bar(
+    data: Sequence[np.ndarray] | np.ndarray,
+    ax: Axes,
+    *,
+    num_bins: int = 10,
+    width: float = 0.7,
+    bin_tick_label: Sequence[float] | np.ndarray | None = None,
+    axis_labels: tuple[str, str] | None = None,
+) -> tuple[Axes, BarContainer]:
+    ...
+
+
+@overload
+def plot_bar(
+    data: Sequence[np.ndarray] | np.ndarray,
+    *,
+    num_bins: int = 10,
+    width: float = 0.7,
+    bin_tick_label: Sequence[float] | np.ndarray | None = None,
+    axis_labels: tuple[str, str] | None = None,
+) -> tuple[Figure, Axes, BarContainer]:
+    ...
+
+
+def plot_bar(
+    data: Sequence[np.ndarray] | np.ndarray,
+    ax: Axes | None = None,
+    *,
+    num_bins: int = 10,
+    width: float = 0.7,
+    bin_tick_label: Sequence[float] | np.ndarray | None = None,
+    axis_labels: tuple[str, str] | None = None,
+) -> tuple[Figure, Axes, BarContainer] | tuple[Axes, BarContainer]:
+    fig = None
+    if ax is None:
+        fig = plt.figure(layout="constrained")
+        ax = fig.add_subplot()
+    hist, _ = np.histogram(data, np.arange(num_bins + 1))
+    if bin_tick_label is None:
+        bin_tick_label = np.arange(num_bins)
+    bar_cont = ax.bar(bin_tick_label, hist, width, tick_label=bin_tick_label)
+    if axis_labels is None:
+        axis_labels = ("x", "y")
+    ax.set_xlabel(axis_labels[0])
+    ax.set_ylabel(axis_labels[1])
+
+    if fig is None:
+        return ax, bar_cont
+    else:
+        return fig, ax, bar_cont
+
+
+if __name__ == "__main__":
+    r = np.random.randn(5, 2)
+    a = plot_bar(r)

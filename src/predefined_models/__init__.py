@@ -6,7 +6,10 @@ from typing import Any
 from omegaconf import DictConfig, OmegaConf
 
 # First Party Library
-from src.configs.model_configs import AutoencoderModelConfig, MAEViTModelConfig
+from ..configs.model_configs import (
+    AutoencoderModelConfig,
+    MAEViTModelConfig,
+)
 
 # Local Library
 from ..mytyping import Device, Model, ModelName

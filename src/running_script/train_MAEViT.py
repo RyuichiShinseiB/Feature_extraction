@@ -10,7 +10,10 @@ import torchvision.utils as vutils
 from omegaconf import DictConfig
 from torch import optim
 
-from src.configs.model_configs import TrainMAEViTConfig, dictconfig2dataclass
+from src.configs.model_configs import (
+    TrainMAEViTConfig,
+    dictconfig2dataclass,
+)
 from src.loss_function import LossFunction, calc_loss
 
 # First Party Library

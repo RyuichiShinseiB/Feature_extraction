@@ -25,7 +25,10 @@ from torchvision.datasets.folder import find_classes, make_dataset, pil_loader
 from torchvision.transforms import transforms
 from tqdm import tqdm
 
-from ..configs.model_configs import TrainAutoencoderConfig, TrainMAEViTConfig
+from ..configs.model_configs import (
+    TrainAutoencoderConfig,
+    TrainMAEViTConfig,
+)
 
 # Local Library
 from ..mytyping import (

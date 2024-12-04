@@ -10,6 +10,7 @@ from src.configs.model_configs import AutoencoderModelConfig, MAEViTModelConfig
 
 # Local Library
 from ..mytyping import Device, Model, ModelName
+from ._load_model import LoadModel
 from ._ResNetVAE import ResNetVAE
 from ._SECAE32 import SECAE32
 from ._SECAE64 import SECAE64

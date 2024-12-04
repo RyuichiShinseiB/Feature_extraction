@@ -129,7 +129,7 @@ def main(_cfg: DictConfig) -> None:
     writer = SummaryWriter(model_save_path / "run-tb")
     # reconst_images: list[Tensor] = []
 
-    test_image = next(iter(val_dataloader))[0][:64].to(device)
+    test_image: torch.Tensor = next(iter(val_dataloader))[0][:64].to(device)
 
     writer.add_image(
         "Test_images",
@@ -176,21 +176,25 @@ def main(_cfg: DictConfig) -> None:
                     train_kldiv_errors.append(errors[1].cpu().item())
 
             # 検証
-            for x, classes in val_dataloader:
-                model.eval()
-                x = x.to(device)
-                reconst, latent_params = model(x)
-                errors = criterion.forward(reconst, x, latent_params)
-                loss = errors[0] + criterion.calc_weight(errors[0]) * errors[1]
+            with torch.no_grad():
+                for x, classes in val_dataloader:
+                    model.eval()
+                    x = x.to(device)
+                    reconst, latent_params = model(x)
+                    errors = criterion.forward(reconst, x, latent_params)
+                    loss = (
+                        errors[0]
+                        + criterion.calc_weight(errors[0]) * errors[1]
+                    )
 
-                # 損失をリストに保存
-                valid_losses.append(loss.cpu().item())
-                valid_reconst_errors.append(errors[0].cpu().item())
-                if errors[1] is not None:
-                    valid_kldiv_errors.append(errors[1].cpu().item())
-                valid_latent_means.append(latent_params[0])
-                valid_classes.append(classes)
-                valid_reconst_images.append(reconst)
+                    # 損失をリストに保存
+                    valid_losses.append(loss.cpu().item())
+                    valid_reconst_errors.append(errors[0].cpu().item())
+                    if errors[1] is not None:
+                        valid_kldiv_errors.append(errors[1].cpu().item())
+                    valid_latent_means.append(latent_params[0])
+                    valid_classes.append(classes)
+                    valid_reconst_images.append(reconst)
 
             # 1エポックでの損失の平均
             mean_train_loss = _mean(train_losses)
@@ -222,25 +226,26 @@ def main(_cfg: DictConfig) -> None:
             )
 
             # 再構成できているかを確認する画像の保存
-            if (epoch + 1) % save_interval == 0 or epoch == 0:
-                model.eval()
-                test_output, _ = model(test_image)
-                writer.add_image(
-                    "Reconstructed_images",
-                    vutils.make_grid(
-                        test_output,
-                        normalize=True,
-                    ),
-                    epoch + 1,
-                )
+            with torch.no_grad():
+                if (epoch + 1) % save_interval == 0 or epoch == 0:
+                    model.eval()
+                    test_output, _ = model(test_image)
+                    writer.add_image(
+                        "Reconstructed_images",
+                        vutils.make_grid(
+                            test_output,
+                            normalize=True,
+                        ),
+                        epoch + 1,
+                    )
 
-                writer.add_embedding(
-                    torch.concat(valid_latent_means),
-                    metadata=torch.concat(valid_classes),
-                    global_step=epoch,
-                    tag="DistributionOnLatentSpace",
-                )
-                writer.flush()
+                    writer.add_embedding(
+                        torch.concat(valid_latent_means),
+                        metadata=torch.concat(valid_classes),
+                        global_step=epoch,
+                        tag="DistributionOnLatentSpace",
+                    )
+                    writer.flush()
 
             if cfg.train.train_hyperparameter.early_stopping:
                 early_stopping(

@@ -9,10 +9,10 @@ model:
     decoder_activation: "selu"
     encoder_output_activation: "tanh"
     decoder_output_activation: "sigmoid"
-    block_name: "basicblock"
+    block_name: "sebottleneck"
     input_size:
-    - 32
-    - 32
+    - 64
+    - 64
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
@@ -27,7 +27,7 @@ train:
 
 dataset:
   image_target: CNTForest
-  path: ./data/processed/CNTForest/cnt_sem_32x32/10k
+  path: ./data/processed/CNTForest/cnt_sem_64x64/10k
   transform:
     Grayscale: 1
     RandomHorizontalFlip: 0.5

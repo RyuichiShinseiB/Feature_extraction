@@ -11,11 +11,11 @@ model:
     decoder_output_activation: "sigmoid"
     block_name: "basicblock"
     input_size:
-    - 32
-    - 32
+    - 64
+    - 64
 
 train:
-  trained_save_path: ${model.name}/2024-11-15/09-23-45
+  trained_save_path: ${model.name}/2024-12-03/15-21-39
   train_hyperparameter:
     lr: 1.0e-4
     epochs: 1000
@@ -27,8 +27,8 @@ train:
 
 dataset:
   image_target: CNTForest
-  train_path: ./data/processed/CNTForest/cnt_sem_32x32/10k
-  check_path: ./data/processed/check/CNTForest/cnt_sem_for_check_32x32/10k
+  train_path: ./data/processed/CNTForest/cnt_sem_64x64/10k
+  check_path: ./data/processed/check/CNTForest/cnt_sem_for_check_64x64/10k
   transform:
     Grayscale: 1
     ToTensor: 0

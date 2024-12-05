@@ -7,3 +7,4 @@ from .autoencoder_configs import (
     dict2dataclass,
     dictconfig2dataclass,
 )
+from .network_configs import TrainClassificationModel

@@ -24,6 +24,10 @@ ModelName = Literal[
     "ResNetVAE",
     # ViT type model
     "MAEViT",
+    # Basic network
+    "DownSamplingResNet",
+    "UpSamplingResNet",
+    "MLP",
 ]
 
 ActivationName = Literal[

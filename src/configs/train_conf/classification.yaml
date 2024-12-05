@@ -1,0 +1,42 @@
+model:
+  feature:
+    network_type: DownScaleResNet
+    pretrained_path: null
+    hyper_parameters:
+      input_channels: 1
+      middle_channels: 64
+      output_channels: 32
+      block_name: basicblock
+      input_size:
+        - 32
+        - 32
+  classifier:
+    network_type: MLP
+    pretrained_path: null
+    hyper_parameters:
+      input_dimension: ${model.feature.hyper_parameters.output_channels}
+      middle_channels:
+        - 100
+      output_channels: 1
+
+train:
+  trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  train_hyperparameter:
+    lr: 1.0e-4
+    epochs: 1000
+    batch_size: 64
+    reconst_loss: bce
+    num_save_reconst_image: 100
+    early_stopping: True
+
+dataset:
+  image_target: CNTForest
+  path: ./data/processed/CNTForest/cnt_sem_64x64/10k
+  transform:
+    Grayscale: 1
+    RandomHorizontalFlip: 0.5
+    ToTensor: 0
+
+hydra:
+  run:
+    dir: ./models/${train.trained_save_path}

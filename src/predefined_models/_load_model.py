@@ -4,6 +4,7 @@ from typing import Any
 
 import torch
 
+from ..configs.model_configs.autoencoder_configs import RecursiveDataclass
 from ..mytyping import Model, ModelName
 from ._ResNetVAE import DownSamplingResNet, ResNetVAE
 from ._SECAE32 import SECAE32
@@ -38,9 +39,12 @@ class LoadModel(Enum):
     def load_model(
         cls,
         model_name: ModelName,
-        model_cfg: dict[str, Any],
+        model_cfg: dict[str, Any] | RecursiveDataclass,
         pretrained_params_path: str | Path | None = None,
     ) -> Model:
+        if isinstance(model_cfg, RecursiveDataclass):
+            model_cfg = model_cfg.to_dict()
+
         try:
             model: Model = cls[model_name.upper()].value(**model_cfg)
         except KeyError as e:

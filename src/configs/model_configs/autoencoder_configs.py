@@ -132,8 +132,12 @@ class TrainConfig(RecursiveDataclass):
 @dataclass
 class TrainDatasetConfig(RecursiveDataclass):
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
-    path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
+    path: Path = Path("../../data/processed/CNTForest/cnt_sem_64x64/10k")
     transform: TransformsNameValue = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.path, Path):
+            self.path = Path(self.path)
 
 
 @dataclass

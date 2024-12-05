@@ -1,8 +1,8 @@
 # Standard Library
-from dataclasses import Field, dataclass, field, fields, is_dataclass
+from dataclasses import Field, asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
 from pprint import pprint
-from typing import Literal, Type, TypeGuard, TypeVar, get_type_hints
+from typing import Any, Literal, Type, TypeGuard, TypeVar, get_type_hints
 
 # Third Party Library
 import hydra
@@ -62,6 +62,15 @@ class RecursiveDataclass:
                 "but a config format that converts to"
                 f"{type(src)} was entered."
             )
+
+    def to_dict(self, ignore_none: bool = True) -> dict[str, Any]:
+        if ignore_none:
+            return asdict(
+                self,
+                dict_factory=lambda x: {k: v for k, v in x if v is not None},
+            )
+        else:
+            return asdict(self)
 
 
 # Hyper parameters dataclasses

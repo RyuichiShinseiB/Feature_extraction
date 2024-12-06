@@ -4,7 +4,6 @@ from pathlib import Path
 # Third Party Library
 import hydra
 import torch
-import torchvision.utils as vutils
 from omegaconf import DictConfig
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
@@ -113,18 +112,10 @@ def main(_cfg: DictConfig) -> None:
     # TensorBoard による学習経過の追跡
     # Managing learning progress with TensorBoard.
     writer = SummaryWriter(model_save_path / "run-tb")
-    # reconst_images: list[Tensor] = []
-
-    test_image = next(iter(val_dataloader))[0][:64].to(device)
-
-    writer.add_image(
-        "Test_images",
-        vutils.make_grid(test_image, normalize=True),
-    )
 
     try:
         # Training start
-        for epoch in range(cfg.train.train_hyperparameter.epochs):
+        for epoch in range(1, cfg.train.train_hyperparameter.epochs + 1):
             train_losses: list[float] = []
 
             valid_losses: list[float] = []
@@ -132,15 +123,13 @@ def main(_cfg: DictConfig) -> None:
             valid_feature_maps: list[torch.Tensor] = []
 
             # 訓練
-            for i, (x, _) in enumerate(train_dataloader, 1):
-                # モデルの訓練
-                model.train()
-
+            model.train()
+            for x, classes in train_dataloader:
                 # データをGPUに移動
                 x = x.to(device)
                 pred = model(x)
                 # 損失の計算
-                loss = criterion.forward(pred, x)[0]
+                loss = criterion.forward(pred, classes)[0]
 
                 # 重みの更新
                 optimizer.zero_grad()
@@ -151,17 +140,18 @@ def main(_cfg: DictConfig) -> None:
                 train_losses.append(loss.cpu().item())
 
             # 検証
-            for x, classes in val_dataloader:
+            with torch.no_grad():
                 model.eval()
-                x = x.to(device)
-                feature_map = feature(x)
-                pred = classifier(feature_map)
-                loss = criterion.forward(pred, x)[0]
+                for x, classes in val_dataloader:
+                    x = x.to(device)
+                    feature_map = feature(x)
+                    pred = classifier(feature_map)
+                    loss = criterion.forward(pred, classes)[0]
 
-                # 損失をリストに保存
-                valid_losses.append(loss.cpu().item())
-                valid_classes.append(classes)
-                valid_feature_maps.append(feature_map)
+                    # 損失をリストに保存
+                    valid_losses.append(loss.cpu().item())
+                    valid_classes.append(classes)
+                    valid_feature_maps.append(feature_map)
 
             # 1エポックでの損失の平均
             mean_train_loss = _mean(train_losses)
@@ -177,31 +167,20 @@ def main(_cfg: DictConfig) -> None:
 
             print(
                 "Epoch: {}/{} |Train loss: {:.3f} |Valid loss: {:.3f}".format(
-                    epoch + 1,
+                    epoch,
                     cfg.train.train_hyperparameter.epochs,
                     mean_train_loss,
                     mean_valid_loss,
                 )
             )
 
-            # 再構成できているかを確認する画像の保存
-            if (epoch + 1) % save_interval == 0 or epoch == 0:
-                model.eval()
-                test_output, _ = model(test_image)
-                writer.add_image(
-                    "Reconstructed_images",
-                    vutils.make_grid(
-                        test_output,
-                        normalize=True,
-                    ),
-                    epoch + 1,
-                )
-
+            # `feature` により抽出された特徴量のマッピング
+            if epoch % save_interval == 0 or epoch == 1:
                 writer.add_embedding(
                     torch.concat(valid_feature_maps),
                     metadata=torch.concat(valid_classes),
                     global_step=epoch,
-                    tag="DistributionOnLatentSpace",
+                    tag="FeatureMap",
                 )
                 writer.flush()
 
@@ -221,30 +200,6 @@ def main(_cfg: DictConfig) -> None:
         torch.save(
             model.state_dict(), model_save_path / "model_parameters.pth"
         )
-
-    # fig = plt.figure()
-    # ax = fig.add_subplot(1, 1, 1)
-    # ax.plot(range(len(train_losses)), train_losses, label="train loss")
-    # ax.set_xlabel("iterations")
-    # ax.set_ylabel(
-    #     f"{cfg.train.train_hyperparameter.reconst_loss.upper()} loss"
-    # )
-    # ax.legend()
-    # if not figure_save_path.exists():
-    #     os.makedirs(figure_save_path)
-    # fig.tight_layout()
-    # fig.savefig(figure_save_path / "loss.jpg")
-
-    # for i, reconst_image in enumerate(reconst_images):
-    #     vutils.save_image(
-    #         reconst_image,
-    #         fp=figure_save_path / f"reconst_images{i*save_interval:03}.png",
-    #     )
-
-    # vutils.save_image(
-    #     vutils.make_grid(test_image, normalize=True),
-    #     fp=figure_save_path / "test_images.png",
-    # )
 
 
 if __name__ == "__main__":

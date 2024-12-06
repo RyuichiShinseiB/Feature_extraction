@@ -32,18 +32,21 @@ def calc_loss(
 class LossFunction(nn.Module):
     def __init__(
         self,
-        reconst_loss_type: Literal["bce", "mse", "None"],
+        reconst_loss_type: Literal["bce", "mse", "ce", "None"],
         var_calc_type: Literal["softplus", "general"] | None,
     ) -> None:
         super().__init__()
         self.latent_loss: LatentLoss | None
 
+        self.reconst_loss: nn.BCELoss | nn.MSELoss | nn.CrossEntropyLoss
         if reconst_loss_type == "bce":
             # self.reconst_loss = self.bce_loss
-            self.reconst_loss: nn.BCELoss | nn.MSELoss = nn.BCELoss()
+            self.reconst_loss = nn.BCELoss()
         elif reconst_loss_type == "mse":
             # self.reconst_loss = self.mse_loss
             self.reconst_loss = nn.MSELoss()
+        elif reconst_loss_type == "ce":
+            self.reconst_loss = nn.CrossEntropyLoss()
         else:
             raise ValueError("Please select another loss function")
 

@@ -83,7 +83,7 @@ def weight_init(m: Any) -> None:
 
 @overload
 def get_dataloader(
-    dataset_path: str,
+    dataset_path: Path | str,
     dataset_transform: TransformsNameValue,
     *,
     batch_size: int = 64,
@@ -96,7 +96,7 @@ def get_dataloader(
 
 @overload
 def get_dataloader(
-    dataset_path: str,
+    dataset_path: Path | str,
     dataset_transform: TransformsNameValue,
     split_ratio: tuple[float, float],
     *,
@@ -110,7 +110,7 @@ def get_dataloader(
 
 @overload
 def get_dataloader(
-    dataset_path: str,
+    dataset_path: Path | str,
     dataset_transform: TransformsNameValue,
     split_ratio: tuple[float, float] | None = None,
     batch_size: int = 64,
@@ -122,7 +122,7 @@ def get_dataloader(
 
 
 def get_dataloader(
-    dataset_path: str,
+    dataset_path: Path | str,
     dataset_transform: TransformsNameValue,
     split_ratio: tuple[float, float] | None = None,
     batch_size: int = 64,

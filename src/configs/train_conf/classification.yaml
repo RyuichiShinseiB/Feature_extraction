@@ -26,7 +26,7 @@ train:
     lr: 1.0e-4
     epochs: 1000
     batch_size: 64
-    reconst_loss: bce
+    reconst_loss: ce
     latent_loss: null
     num_save_reconst_image: 100
     early_stopping: True

@@ -10,6 +10,7 @@ import torch.utils.data
 from omegaconf import DictConfig
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
+from torcheval.metrics.functional import binary_accuracy, multiclass_accuracy
 
 from src.configs.model_configs import TrainClassificationModel
 from src.loss_function import LossFunction
@@ -25,7 +26,8 @@ from src.utilities import (
 class TrainReturnDict(TypedDict):
     loss: list[float]
     feature_map: list[torch.Tensor]
-    cls: list[torch.Tensor]
+    target: list[torch.Tensor]
+    predicted: list[torch.Tensor]
 
 
 def _mean(vals: list[float]) -> float:
@@ -39,11 +41,16 @@ def _write_loss_progress(
     epoch: int,
     train_loss: float,
     valid_loss: float,
+    train_accuracy: float,
+    valid_accuracy: float,
 ) -> SummaryWriter:
-    ## 訓練時
+    # 訓練時
     writer.add_scalar("Loss/Training/Total", train_loss, epoch)
-    ## 検証時
+    writer.add_scalar("Accuracy/Training", train_accuracy, epoch)
+
+    # 検証時
     writer.add_scalar("Loss/Valid/Total", valid_loss, epoch)
+    writer.add_scalar("Accuracy/Valid", valid_accuracy, epoch)
 
     return writer
 
@@ -60,14 +67,15 @@ def _pass_through_one_epoch(
     recorder: TrainReturnDict = {
         "loss": [],
         "feature_map": [],
-        "cls": [],
+        "target": [],
+        "predicted": [],
     }
     for x, classes in dataloader:
         x = x.to(device)
         feature_map = feature(x)
         if isinstance(feature_map, (tuple, list)):
             feature_map = feature_map[0]
-        pred = classifier(feature_map)
+        pred: torch.Tensor = classifier(feature_map)
         if num_classes != 1:
             t = F.one_hot(classes, num_classes).to(
                 device=device, dtype=torch.float32
@@ -83,7 +91,8 @@ def _pass_through_one_epoch(
 
         recorder["loss"].append(loss.detach().cpu().item())
         recorder["feature_map"].append(feature_map.detach().cpu())
-        recorder["cls"].append(classes.detach().cpu())
+        recorder["target"].append(classes.detach().cpu())
+        recorder["predicted"].append(pred.detach().cpu())
 
     return recorder
 
@@ -98,7 +107,7 @@ def _train_model(
     device: Device,
     max_epoch: int,
     writer: SummaryWriter,
-    early_stopping: EarlyStopping,
+    early_stopping: EarlyStopping | None,
     num_classes: int = 1,
     progress_interval: int = 10,
 ) -> None:
@@ -130,7 +139,39 @@ def _train_model(
         mean_train_loss = _mean(train_recorder["loss"])
         mean_valid_loss = _mean(valid_recorder["loss"])
 
-        _write_loss_progress(writer, epoch, mean_train_loss, mean_valid_loss)
+        if num_classes == 1:
+            train_acc = binary_accuracy(
+                torch.concat(train_recorder["predicted"]),
+                torch.concat(train_recorder["target"]),
+            ).item()
+
+            valid_acc = binary_accuracy(
+                torch.concat(valid_recorder["predicted"]),
+                torch.concat(valid_recorder["target"]),
+            ).item()
+        else:
+            train_acc = multiclass_accuracy(
+                torch.concat(train_recorder["predicted"]),
+                torch.concat(train_recorder["target"]),
+                average="micro",
+                num_classes=num_classes,
+            ).item()
+
+            valid_acc = multiclass_accuracy(
+                torch.concat(valid_recorder["predicted"]),
+                torch.concat(valid_recorder["target"]),
+                average="micro",
+                num_classes=num_classes,
+            ).item()
+
+        _write_loss_progress(
+            writer,
+            epoch,
+            mean_train_loss,
+            mean_valid_loss,
+            train_acc,
+            valid_acc,
+        )
         if epoch % progress_interval == 0 or epoch == 1:
             print(
                 "Epoch: {}/{} |Train loss: {:.3f} |Valid loss: {:.3f}".format(
@@ -142,12 +183,13 @@ def _train_model(
             )
             writer.add_embedding(
                 torch.concat(valid_recorder["feature_map"]),
-                metadata=torch.concat(valid_recorder["cls"]),
+                metadata=torch.concat(valid_recorder["target"]),
                 global_step=epoch,
                 tag="FeatureMap",
             )
             writer.flush()
 
+        if early_stopping is not None:
             early_stopping(mean_valid_loss, model)
             if early_stopping.early_stop:
                 break
@@ -198,9 +240,13 @@ def main(_cfg: DictConfig) -> None:
     # Early stoppingの宣言
     # 過学習を防ぐためにepochの途中で終了する
     # Declaration of Early stopping
-    early_stopping = EarlyStopping(
-        patience=50, save_path=model_save_path / "model_parameters_ea.pth"
-    )
+    if cfg.train.train_hyperparameter.early_stopping is not None:
+        early_stopping = EarlyStopping(
+            patience=cfg.train.train_hyperparameter.early_stopping,
+            save_path=model_save_path / "model_parameters_ea.pth",
+        )
+    else:
+        early_stopping = None
 
     # データローダーを設定
     # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、  # noqa: E501

@@ -13,6 +13,7 @@ class MLP(nn.Module):
         middle_dimensions: Sequence[int],
         output_dimension: int,
         activation: ActivationName,
+        output_activation: ActivationName | None,
     ) -> None:
         super().__init__()
         self.input_dimension = input_dimension
@@ -25,9 +26,12 @@ class MLP(nn.Module):
         )
         self.final_layer = nn.Linear(middle_dimensions[-1], output_dimension)
         self.activation = add_activation(activation)
-        self.output_activation = (
-            nn.Sigmoid() if output_dimension == 1 else nn.Softmax(1)
-        )
+        if output_activation is None:
+            self.output_activation = (
+                nn.Sigmoid() if output_dimension == 1 else nn.Softmax(1)
+            )
+        else:
+            self.output_activation = add_activation(output_activation)
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.layers(x)

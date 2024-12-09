@@ -5,26 +5,30 @@ model:
     pretrained_path: null
     hyper_parameters:
       input_channels: 1
-      middle_channels: 64
+      inplanes: 64
+      layers:
+        - 3
+        - 4
+        - 6
+        - 3
       output_channels: 32
       block_name: basicblock
-      input_size:
-        - 32
-        - 32
+      activation: relu
   classifier:
     network_type: MLP
     pretrained_path: null
     hyper_parameters:
       input_dimension: ${model.feature.hyper_parameters.output_channels}
-      middle_channels:
+      middle_dimensions:
         - 100
-      output_channels: 1
+      output_dimension: 9
+      activation: relu
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
     lr: 1.0e-4
-    epochs: 1000
+    epochs: 10
     batch_size: 64
     reconst_loss: ce
     latent_loss: null

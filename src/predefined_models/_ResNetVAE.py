@@ -186,6 +186,22 @@ class DownSamplingResNet(nn.Module):
         return x, output_size_conv1, pool_indices
 
     def forward(self, x: Tensor) -> tuple[Tensor, tuple[int, ...], Tensor]:
+        """forwarding of DownSamplingResNet
+
+        Parameters
+        ----------
+        x : Tensor
+            Input tensor
+
+        Returns
+        -------
+        feature: Tensor
+            Feature map obtained from the input tensor
+        output_size_conv1: tuple[int, ...]
+            Shape of feature map after going through `conv1`.
+        pool_indices: Tensor
+            Tensor size after through conv.
+        """
         return self._forward_impl(x)
 
 

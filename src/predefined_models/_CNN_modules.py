@@ -4,7 +4,7 @@ from typing import Literal, Union
 # Third Party Library
 from torch import nn
 
-from src.mytyping import ActivationName, Tensor
+from ..mytyping import ActivationName, Tensor
 
 
 def conv2d3x3(
@@ -87,10 +87,16 @@ def conv2d1x1(
 
 
 def add_activation(
-    activation: Literal[
-        "relu", "selu", "leakyrelu", "sigmoid", "tanh", "identity"
-    ] = "relu",
-) -> Union[nn.ReLU, nn.SELU, nn.LeakyReLU, nn.Sigmoid, nn.Tanh, nn.Identity]:
+    activation: ActivationName = "relu",
+) -> Union[
+    nn.ReLU,
+    nn.SELU,
+    nn.LeakyReLU,
+    nn.Sigmoid,
+    nn.Tanh,
+    nn.Identity,
+    nn.Softplus,
+]:
     """Add the specified activation function
 
     Parameters
@@ -128,8 +134,10 @@ def add_activation(
         return nn.Tanh()
     elif activation == "identity":
         return nn.Identity()
+    elif activation == "softplus":
+        return nn.Softplus()
     else:
-        raise RuntimeError(
+        raise ValueError(
             f'There is no activation function such as "{activation}"'
         )
 

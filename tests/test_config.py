@@ -4,6 +4,7 @@ from typing import Any
 from hydra import compose, initialize
 
 from src.configs.model_configs import TrainClassificationModel
+from src.predefined_models import LoadModel
 
 
 def test_train_classification_model() -> None:
@@ -35,3 +36,23 @@ def test_cvt_cfg_to_dict() -> None:
                 _assert_recursive_dict(v)
 
     _assert_recursive_dict(cfg)
+
+
+def test_load_cfg_to_ResNet() -> None:
+    with initialize("../src/configs/train_conf/", version_base=None):
+        _cfg = compose("classification")
+    cfg = TrainClassificationModel.from_dictconfig(_cfg)
+    model = LoadModel.load_model(
+        cfg.model.feature.network_type,
+        cfg.model.feature.hyper_parameters,
+    )
+
+
+def test_load_cfg_to_MLP() -> None:
+    with initialize("../src/configs/train_conf/", version_base=None):
+        _cfg = compose("classification")
+    cfg = TrainClassificationModel.from_dictconfig(_cfg)
+    model = LoadModel.load_model(
+        cfg.model.classifier.network_type,
+        cfg.model.classifier.hyper_parameters,
+    )

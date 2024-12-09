@@ -395,7 +395,12 @@ class ForExtractFolder(VisionDataset):
 
 
 class EarlyStopping:
-    def __init__(self, patience: int = 7, verbose: bool = False) -> None:
+    def __init__(
+        self,
+        patience: int = 7,
+        verbose: bool = False,
+        save_path: Path = Path("./model/temp/temp.pth"),
+    ) -> None:
         self.patience = patience
         self.verbose = verbose
         self.counter: int = 0
@@ -403,12 +408,13 @@ class EarlyStopping:
         self.early_stop: bool = False
         self.val_loss_min: float = float("inf")
         self.force_cancel: bool = False
+        self.save_path = save_path
 
     def __call__(
         self,
         val_loss: float | Any,
         model: Model,
-        save_path: str | Path,
+        save_path: str | Path | None = None,
     ) -> None:
         score: float = -val_loss
 
@@ -420,6 +426,8 @@ class EarlyStopping:
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
+            if save_path is None:
+                save_path = self.save_path
             self.best_score = score
             self.save_checkpoint(val_loss, model, save_path)
             self.counter = 0

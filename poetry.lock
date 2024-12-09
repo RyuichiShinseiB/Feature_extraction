@@ -3780,6 +3780,24 @@ hdfs = ["fsspec", "pyarrow"]
 s3 = ["boto3"]
 
 [[package]]
+name = "torcheval"
+version = "0.0.7"
+description = "A library for providing a simple interface to create new metrics and an easy-to-use toolkit for metric computations and checkpointing."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "torcheval-0.0.7-py3-none-any.whl", hash = "sha256:20cc34dac7aa9b32f942c8a9f014d1d02098631b6cd0b102c078600577017956"},
+    {file = "torcheval-0.0.7.tar.gz", hash = "sha256:a498dec34137bc66c9cf1adc7353a46c604dd62255884c72dcb4e2e4fc2cd7e9"},
+]
+
+[package.dependencies]
+typing-extensions = "*"
+
+[package.extras]
+dev = ["Cython (>=0.28.5)", "numpy", "pre-commit", "pytest", "pytest-cov", "pytest-timeout", "scikit-image (>=0.18.3)", "scikit-learn (>=0.22)", "torchtnt-nightly"]
+image = ["torchvision"]
+
+[[package]]
 name = "torchinfo"
 version = "1.8.0"
 description = "Model summary in PyTorch, based off of the original torchsummary."
@@ -4093,4 +4111,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f20dd7b8bcdbd0cc5255d0af54ab3675f97032984e0a4276ee1b54797d39c80b"
+content-hash = "d669a7ef9df3fe54bdbecdb2ae584962b174a0d6d28f35facfde0f89537a12a4"

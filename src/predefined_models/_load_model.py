@@ -4,10 +4,13 @@ from typing import Any
 
 import torch
 
-from ..configs.model_configs.autoencoder_configs import RecursiveDataclass
+from ..configs.model_configs.base_configs import (
+    NetworkConfig,
+    RecursiveDataclass,
+)
 from ..mytyping import Model, ModelName
 from ._MLP import MLP
-from ._ResNetVAE import DownSamplingResNet, ResNetVAE
+from ._ResNetVAE import DownSamplingResNet, ResNetVAE, UpSamplingResNet
 from ._SECAE32 import SECAE32
 from ._SECAE64 import SECAE64
 from ._SEConvVAE64 import SECVAE64
@@ -24,6 +27,7 @@ from ._SimpleConvVAE_softplus64 import SimpleCVAEsoftplus64
 class LoadModel(Enum):
     MLP = MLP
     DOWNSAMPLINGRESNET = DownSamplingResNet
+    UPSAMPLINGRESNET = UpSamplingResNet
     RESNETVAE = ResNetVAE
     SECAE32 = SECAE32
     SECAE64 = SECAE64
@@ -58,3 +62,9 @@ class LoadModel(Enum):
                 )
             )
         return model
+
+    @classmethod
+    def from_config(cls, cfg: NetworkConfig) -> Model:
+        return cls.load_model(
+            cfg.network_type, cfg.hyper_parameters, cfg.pretrained_path
+        )

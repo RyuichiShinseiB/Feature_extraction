@@ -26,9 +26,7 @@ class MLP(nn.Module):
         self.final_layer = nn.Linear(middle_dimensions[-1], output_dimension)
         self.activation = add_activation(activation)
         self.output_activation = (
-            nn.Sigmoid()
-            if output_dimension == 1
-            else nn.Softmax(output_dimension)
+            nn.Sigmoid() if output_dimension == 1 else nn.Softmax(1)
         )
 
     def forward(self, x: Tensor) -> Tensor:

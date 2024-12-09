@@ -34,7 +34,7 @@ class VAEFrame(nn.Module):
     ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
         x = self.encoder(x)
         mean = self.latent_mean(x)
-        var = self.latent_mean(x)
+        var = self.latent_var(x)
         eps = torch.randn_like(mean)
         z: Tensor = mean + eps * var
         x = self.decoder(z)
@@ -45,7 +45,7 @@ class VAEFrame(nn.Module):
     ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
         x, size, indices = self.encoder(x)
         mean = self.latent_mean(x)
-        var = self.latent_mean(x)
+        var = self.latent_var(x)
         eps = torch.randn_like(mean)
         z: Tensor = mean + eps * var
         x = self.decoder(z, size, indices)
@@ -56,7 +56,7 @@ class VAEFrame(nn.Module):
     ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
         x, *_ = self.encoder(x)
         mean = self.latent_mean(x)
-        var = self.latent_mean(x)
+        var = self.latent_var(x)
         eps = torch.randn_like(mean)
         z: Tensor = mean + eps * var
         x = self.decoder(z)

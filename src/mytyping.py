@@ -31,7 +31,7 @@ ModelName = Literal[
 ]
 
 ActivationName = Literal[
-    "relu", "selu", "leakyrelu", "sigmoid", "tanh", "identity"
+    "relu", "selu", "leakyrelu", "sigmoid", "tanh", "identity", "softplus"
 ]
 
 TransformsName = Literal[

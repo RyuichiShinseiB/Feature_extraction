@@ -28,11 +28,11 @@ train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
     lr: 1.0e-4
-    epochs: 10
+    epochs: 100
     batch_size: 64
     reconst_loss: ce
     latent_loss: null
-    num_save_reconst_image: 100
+    num_save_reconst_image: 10
     early_stopping: True
 
 dataset:

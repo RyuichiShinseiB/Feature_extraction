@@ -15,20 +15,24 @@ from ._CNN_modules import (
 
 def _make_resnet_layer(
     block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
-    in_ch: int,
-    out_ch: int,
+    input_channels: int,
+    output_channels: int,
     num_blocks: int,
     stride: int = 1,
     activation: ActivationName = "relu",
     how_sampling: Literal["down", "up"] = "down",
 ) -> nn.Sequential:
     layers = []
-    layers.append(block(in_ch, out_ch, stride, activation, how_sampling))
+    layers.append(
+        block(
+            input_channels, output_channels, stride, activation, how_sampling
+        )
+    )
     for _ in range(1, num_blocks):
         layers.append(
             block(
-                out_ch,
-                out_ch,
+                output_channels,
+                output_channels,
                 activation=activation,
                 how_sampling=how_sampling,
             )
@@ -79,10 +83,10 @@ def _set_resnet_block(
 class DownSamplingResNet(nn.Module):
     def __init__(
         self,
-        block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
+        block_name: ResNetBlockName | None,
         layers: tuple[int, int, int, int],
-        in_ch: int = 1,
-        out_ch: int = 1000,
+        input_channels: int = 1,
+        output_channels: int = 1000,
         inplanes: int = 64,
         zero_init_residual: bool = False,
         activation: ActivationName = "relu",
@@ -91,12 +95,12 @@ class DownSamplingResNet(nn.Module):
         super().__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-
+        block = _set_resnet_block(block_name)
         self.inplaneses = tuple(
             [inplanes] + list(_inplanes(inplanes * block.expansion, 2, 4))
         )
         self.conv1 = nn.Conv2d(
-            in_ch,
+            input_channels,
             self.inplaneses[0],
             kernel_size=7,
             stride=2,
@@ -140,7 +144,7 @@ class DownSamplingResNet(nn.Module):
             activation=activation,
         )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(self.inplaneses[4], out_ch)
+        self.fc = nn.Linear(self.inplaneses[4], output_channels)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -188,10 +192,10 @@ class DownSamplingResNet(nn.Module):
 class UpSamplingResNet(nn.Module):
     def __init__(
         self,
-        block: type[MyBasicBlock | MyBottleneck | SEBottleneck],
+        block_name: ResNetBlockName | None,
         layers: tuple[int, int, int, int],
-        in_ch: int = 1000,
-        out_ch: int = 1,
+        input_channels: int = 1000,
+        output_channels: int = 1,
         inplanes: int = 64,
         zero_init_residual: bool = False,
         activation: ActivationName = "relu",
@@ -204,6 +208,8 @@ class UpSamplingResNet(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
 
+        block = _set_resnet_block(block_name)
+
         self.inplaneses = tuple(
             [inplanes] + list(_inplanes(inplanes * block.expansion, 2, 4))
         )
@@ -212,7 +218,7 @@ class UpSamplingResNet(nn.Module):
         self.output_actfunc = add_activation(output_activation)
         self.conv1_t = nn.ConvTranspose2d(
             self.inplaneses[0],
-            out_ch,
+            output_channels,
             kernel_size=7,
             stride=2,
             padding=3,
@@ -267,7 +273,7 @@ class UpSamplingResNet(nn.Module):
             stride=(2, 2, 1, 2, 2, 2),
         )
         self.avgpool_t = nn.UpsamplingNearest2d(before_avgpool_size)
-        self.fc = nn.Linear(in_ch, self.inplaneses[4])
+        self.fc = nn.Linear(input_channels, self.inplaneses[4])
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -341,10 +347,10 @@ class ResNetVAE(nn.Module):
         self.latent_dimensions = latent_dimensions
 
         self.encoder = DownSamplingResNet(
-            block=_set_resnet_block(block_name),
+            block_name=block_name,
             layers=(3, 4, 6, 3),
-            in_ch=input_channels,
-            out_ch=latent_dimensions,
+            input_channels=input_channels,
+            output_channels=latent_dimensions,
             inplanes=encoder_base_channels,
             activation=encoder_activation,
         )
@@ -363,10 +369,10 @@ class ResNetVAE(nn.Module):
         )
 
         self.decoder = UpSamplingResNet(
-            block=_set_resnet_block(block_name),
+            block_name=block_name,
             layers=(3, 4, 6, 3),
-            in_ch=latent_dimensions,
-            out_ch=input_channels,
+            input_channels=latent_dimensions,
+            output_channels=input_channels,
             inplanes=decoder_base_channels,
             activation=decoder_activation,
             output_activation=decoder_output_activation,

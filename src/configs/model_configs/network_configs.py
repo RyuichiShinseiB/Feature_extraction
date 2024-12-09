@@ -33,8 +33,19 @@ class NetworkHyperParams(RecursiveDataclass):
     decoder_output_activation: ActivationName | None = None
 
     # for resnet
+    inplanes: int | None = None
     block_name: ResNetBlockName | None = None
+    layers: tuple[int, int, int, int] | None = None
     input_size: Sequence[int] | None = None
+    output_activation: ActivationName | None = None
+
+    def __post_init__(self) -> None:
+        if self.layers is not None and len(self.layers) != 4:
+            raise ValueError(
+                "ResNet has four types of skipp-connections, "
+                "which are set using the `layers` field.\n"
+                f"However, There are {len(self.layers)} elements in `layers`"
+            )
 
 
 @dataclass

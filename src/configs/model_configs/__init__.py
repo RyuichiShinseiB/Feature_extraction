@@ -5,6 +5,7 @@ from .autoencoder_configs import (
     TrainAutoencoderConfig,
     TrainAutoencoderConfigV2,
     TrainMAEViTConfig,
+    TrainVAEConfig,
 )
 from .base_configs import (
     dict2dataclass,

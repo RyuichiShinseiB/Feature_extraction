@@ -5,4 +5,4 @@ from .v1 import (
     TrainAutoencoderConfig,
     TrainMAEViTConfig,
 )
-from .v2 import TrainAutoencoderConfigV2
+from .v2 import TrainAutoencoderConfigV2, TrainVAEConfig

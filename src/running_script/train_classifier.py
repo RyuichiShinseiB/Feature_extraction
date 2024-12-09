@@ -1,21 +1,31 @@
 # Standard Library
 from pathlib import Path
+from typing import TypedDict
 
 # Third Party Library
 import hydra
 import torch
+import torch.nn.functional as F
+import torch.utils.data
 from omegaconf import DictConfig
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 
 from src.configs.model_configs import TrainClassificationModel
 from src.loss_function import LossFunction
+from src.mytyping import Device
 from src.predefined_models import LoadModel
 from src.utilities import (
     EarlyStopping,
     display_cfg,
     get_dataloader,
 )
+
+
+class TrainReturnDict(TypedDict):
+    loss: list[float]
+    feature_map: list[torch.Tensor]
+    cls: list[torch.Tensor]
 
 
 def _mean(vals: list[float]) -> float:
@@ -36,6 +46,111 @@ def _write_loss_progress(
     writer.add_scalar("Loss/Valid/Total", valid_loss, epoch)
 
     return writer
+
+
+def _pass_through_one_epoch(
+    feature: torch.nn.Module,
+    classifier: torch.nn.Module,
+    dataloader: torch.utils.data.DataLoader,
+    criterion: LossFunction,
+    device: Device,
+    num_classes: int = 1,
+    optimizer: optim.Optimizer | None = None,
+) -> TrainReturnDict:
+    recorder: TrainReturnDict = {
+        "loss": [],
+        "feature_map": [],
+        "cls": [],
+    }
+    for x, classes in dataloader:
+        x = x.to(device)
+        feature_map = feature(x)
+        if isinstance(feature_map, (tuple, list)):
+            feature_map = feature_map[0]
+        pred = classifier(feature_map)
+        if num_classes != 1:
+            t = F.one_hot(classes, num_classes).to(
+                device=device, dtype=torch.float32
+            )
+        else:
+            t = classes.to(device=device, dtype=torch.float32)
+        loss = criterion.forward(pred, t)[0]
+
+        if optimizer is not None:
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        recorder["loss"].append(loss.detach().cpu().item())
+        recorder["feature_map"].append(feature_map.detach().cpu())
+        recorder["cls"].append(classes.detach().cpu())
+
+    return recorder
+
+
+def _train_model(
+    model: torch.nn.Sequential,
+    dataloaders: tuple[
+        torch.utils.data.DataLoader, torch.utils.data.DataLoader
+    ],
+    criterion: LossFunction,
+    optimizer: optim.Optimizer,
+    device: Device,
+    max_epoch: int,
+    writer: SummaryWriter,
+    early_stopping: EarlyStopping,
+    num_classes: int = 1,
+    progress_interval: int = 10,
+) -> None:
+    for epoch in range(1, max_epoch + 1):
+        # training
+        model.train()
+        train_recorder = _pass_through_one_epoch(
+            model[0],
+            model[1],
+            dataloaders[0],
+            criterion,
+            device,
+            num_classes,
+            optimizer,
+        )
+
+        # validation
+        model.eval()
+        with torch.no_grad():
+            valid_recorder = _pass_through_one_epoch(
+                model[0],
+                model[1],
+                dataloaders[1],
+                criterion,
+                device,
+                num_classes,
+            )
+
+        mean_train_loss = _mean(train_recorder["loss"])
+        mean_valid_loss = _mean(valid_recorder["loss"])
+
+        _write_loss_progress(writer, epoch, mean_train_loss, mean_valid_loss)
+        if epoch % progress_interval == 0 or epoch == 1:
+            print(
+                "Epoch: {}/{} |Train loss: {:.3f} |Valid loss: {:.3f}".format(
+                    epoch,
+                    max_epoch,
+                    mean_train_loss,
+                    mean_valid_loss,
+                )
+            )
+            writer.add_embedding(
+                torch.concat(valid_recorder["feature_map"]),
+                metadata=torch.concat(valid_recorder["cls"]),
+                global_step=epoch,
+                tag="FeatureMap",
+            )
+            writer.flush()
+
+            early_stopping(mean_valid_loss, model)
+            if early_stopping.early_stop:
+                break
 
 
 @hydra.main(
@@ -61,6 +176,9 @@ def main(_cfg: DictConfig) -> None:
         // cfg.train.train_hyperparameter.num_save_reconst_image
     )
 
+    if save_interval == 0:
+        save_interval = 1
+
     # GPUが使える環境であればCPUでなくGPUを使うようにする設定
     # Use GPU instead of CPU if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -80,7 +198,9 @@ def main(_cfg: DictConfig) -> None:
     # Early stoppingの宣言
     # 過学習を防ぐためにepochの途中で終了する
     # Declaration of Early stopping
-    early_stopping = EarlyStopping(patience=50)
+    early_stopping = EarlyStopping(
+        patience=50, save_path=model_save_path / "model_parameters_ea.pth"
+    )
 
     # データローダーを設定
     # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、  # noqa: E501
@@ -104,6 +224,15 @@ def main(_cfg: DictConfig) -> None:
         cfg.train.train_hyperparameter.latent_loss,
     )
 
+    # クラスの数
+    model_hparams = cfg.model.classifier.hyper_parameters
+    if model_hparams.output_dimension is not None:
+        num_classes = model_hparams.output_dimension
+    elif model_hparams.output_channels is not None:
+        num_classes = model_hparams.output_channels
+    else:
+        num_classes = 1
+
     # オプティマイザの設定
     optimizer = optim.Adam(
         model.parameters(), cfg.train.train_hyperparameter.lr
@@ -115,84 +244,110 @@ def main(_cfg: DictConfig) -> None:
 
     try:
         # Training start
-        for epoch in range(1, cfg.train.train_hyperparameter.epochs + 1):
-            train_losses: list[float] = []
+        _train_model(
+            model,
+            (train_dataloader, val_dataloader),
+            criterion,
+            optimizer,
+            device,
+            cfg.train.train_hyperparameter.epochs,
+            writer,
+            early_stopping,
+            num_classes,
+            save_interval,
+        )
+        # for epoch in range(1, cfg.train.train_hyperparameter.epochs + 1):
+        #     train_losses: list[float] = []
 
-            valid_losses: list[float] = []
-            valid_classes: list[torch.Tensor] = []
-            valid_feature_maps: list[torch.Tensor] = []
+        #     valid_losses: list[float] = []
+        #     valid_classes: list[torch.Tensor] = []
+        #     valid_feature_maps: list[torch.Tensor] = []
 
-            # 訓練
-            model.train()
-            for x, classes in train_dataloader:
-                # データをGPUに移動
-                x = x.to(device)
-                pred = model(x)
-                # 損失の計算
-                loss = criterion.forward(pred, classes)[0]
+        #     # 訓練
+        #     model.train()
+        #     for x, classes in train_dataloader:
+        #         # データをGPUに移動
+        #         x = x.to(device)
+        #         feature_map = feature(x)
+        #         if isinstance(feature_map, (tuple, list)):
+        #             feature_map = feature_map[0]
+        #         pred = classifier(feature_map)
+        #         if num_classes != 1:
+        #             classes = F.one_hot(classes, num_classes).to(
+        #                 device=device, dtype=torch.float32
+        #             )
 
-                # 重みの更新
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+        #         # 損失の計算
+        #         loss = criterion.forward(pred, classes)[0]
 
-                # 損失をリストに保存
-                train_losses.append(loss.cpu().item())
+        #         # 重みの更新
+        #         optimizer.zero_grad()
+        #         loss.backward()
+        #         optimizer.step()
 
-            # 検証
-            with torch.no_grad():
-                model.eval()
-                for x, classes in val_dataloader:
-                    x = x.to(device)
-                    feature_map = feature(x)
-                    pred = classifier(feature_map)
-                    loss = criterion.forward(pred, classes)[0]
+        #         # 損失をリストに保存
+        #         train_losses.append(loss.cpu().item())
 
-                    # 損失をリストに保存
-                    valid_losses.append(loss.cpu().item())
-                    valid_classes.append(classes)
-                    valid_feature_maps.append(feature_map)
+        #     # 検証
+        #     with torch.no_grad():
+        #         model.eval()
+        #         for x, classes in val_dataloader:
+        #             x = x.to(device)
+        #             feature_map = feature(x)
+        #             if isinstance(feature_map, (tuple, list)):
+        #                 feature_map = feature_map[0]
+        #             if num_classes != 1:
+        #                 classes = F.one_hot(classes, num_classes).to(
+        #                     device=device, dtype=torch.float32
+        #                 )
+        #             pred = classifier(feature_map)
+        #             loss = criterion.forward(pred, classes)[0]
 
-            # 1エポックでの損失の平均
-            mean_train_loss = _mean(train_losses)
-            mean_valid_loss = _mean(valid_losses)
+        #             # 損失をリストに保存
+        #             valid_losses.append(loss.cpu().item())
+        #             valid_classes.append(classes)
+        #             valid_feature_maps.append(feature_map)
 
-            # 損失の経過を記録
-            _write_loss_progress(
-                writer,
-                epoch,
-                mean_train_loss,
-                mean_valid_loss,
-            )
+        #     # 1エポックでの損失の平均
+        #     mean_train_loss = _mean(train_losses)
+        #     mean_valid_loss = _mean(valid_losses)
 
-            print(
-                "Epoch: {}/{} |Train loss: {:.3f} |Valid loss: {:.3f}".format(
-                    epoch,
-                    cfg.train.train_hyperparameter.epochs,
-                    mean_train_loss,
-                    mean_valid_loss,
-                )
-            )
+        #     # 損失の経過を記録
+        #     _write_loss_progress(
+        #         writer,
+        #         epoch,
+        #         mean_train_loss,
+        #         mean_valid_loss,
+        #     )
 
-            # `feature` により抽出された特徴量のマッピング
-            if epoch % save_interval == 0 or epoch == 1:
-                writer.add_embedding(
-                    torch.concat(valid_feature_maps),
-                    metadata=torch.concat(valid_classes),
-                    global_step=epoch,
-                    tag="FeatureMap",
-                )
-                writer.flush()
+        #     print(
+        #         "Epoch: {}/{} |Train loss: {:.3f} |Valid loss: {:.3f}".format(
+        #             epoch,
+        #             cfg.train.train_hyperparameter.epochs,
+        #             mean_train_loss,
+        #             mean_valid_loss,
+        #         )
+        #     )
 
-            if cfg.train.train_hyperparameter.early_stopping:
-                early_stopping(
-                    mean_valid_loss,
-                    model,
-                    save_path=model_save_path
-                    / "early_stopped_model_parameters.pth",
-                )
-                if early_stopping.early_stop:
-                    break
+        #     # `feature` により抽出された特徴量のマッピング
+        #     if epoch % save_interval == 0 or epoch == 1:
+        #         writer.add_embedding(
+        #             torch.concat(valid_feature_maps),
+        #             metadata=torch.concat(valid_classes),
+        #             global_step=epoch,
+        #             tag="FeatureMap",
+        #         )
+        #         writer.flush()
+
+        #     if cfg.train.train_hyperparameter.early_stopping:
+        #         early_stopping(
+        #             mean_valid_loss,
+        #             model,
+        #             save_path=model_save_path
+        #             / "early_stopped_model_parameters.pth",
+        #         )
+        #         if early_stopping.early_stop:
+        #             break
     except KeyboardInterrupt as e:
         raise KeyboardInterrupt(f"Training was stopped: {e}") from e
     finally:

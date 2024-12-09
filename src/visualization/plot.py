@@ -167,7 +167,9 @@ def image_concat_and_imshow(
     if labels is None:
         labels = df.select("cluster").to_numpy().flatten()
 
-    for label in np.unique(labels):
+    unique_label = np.unique(labels)
+
+    for label in unique_label:
         hoge = df.filter(pl.col("cluster") == label)
 
         # 該当するクラスタのデータが少ない場合の処理
@@ -190,7 +192,7 @@ def image_concat_and_imshow(
 
     fig = plt.figure(figsize=figsize, layout="constrained")
 
-    for i in labels:
+    for i in unique_label:
         ax = fig.add_subplot(2, 5, i + 1)
         ax.imshow(concat_imgs[i], "gray")
         ax.set_title(f"cluster {i}")

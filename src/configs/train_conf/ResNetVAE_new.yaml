@@ -1,0 +1,75 @@
+model:
+  name: ResNetVAE50
+  encoder:
+    network_type: DownSamplingResNet
+    pretrained_path: null
+    hyper_parameters:
+      input_channels: 1
+      inplanes: 64
+      layers:
+        - 3
+        - 4
+        - 6
+        - 3
+      output_channels: 32
+      block_name: basicblock
+      activation: relu
+  latent_mean:
+    network_type: MLP
+    pretrained_path: null
+    hyper_parameters:
+      input_dimension: ${model.encoder.hyper_parameters.output_channels}
+      middle_dimensions:
+        - ${model.encoder.hyper_parameters.output_channels}
+      output_dimension: ${model.encoder.hyper_parameters.output_channels}
+      activation: relu
+      output_activation: identity
+  latent_var:
+    network_type: MLP
+    pretrained_path: null
+    hyper_parameters:
+      input_dimension: ${model.encoder.hyper_parameters.output_channels}
+      middle_dimensions:
+        - ${model.encoder.hyper_parameters.output_channels}
+      output_dimension: ${model.encoder.hyper_parameters.output_channels}
+      activation: relu
+      output_activation: softplus
+  decoder:
+    network_type: UpSamplingResNet
+    pretrained_path: null
+    hyper_parameters:
+      input_channels: ${model.encoder.hyper_parameters.output_channels}
+      inplanes: 64
+      layers:
+        - 3
+        - 6
+        - 4
+        - 3
+      output_channels: 1
+      block_name: basicblock
+      activation: relu
+      output_activation: sigmoid
+
+train:
+  trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  train_hyperparameter:
+    lr: 1.0e-4
+    epochs: 10
+    batch_size: 64
+    reconst_loss: bce
+    latent_loss: softplus
+    num_save_reconst_image: 10
+    early_stopping: True
+
+dataset:
+  image_target: CNTForest
+  path: ./data/processed/CNTForest/cnt_sem_64x64/10k
+  transform:
+    Grayscale: 1
+    RandomHorizontalFlip: 0.5
+    ToTensor: 0
+
+hydra:
+  run:
+    dir: ./models/${train.trained_save_path}
+

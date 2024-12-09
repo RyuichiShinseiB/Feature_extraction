@@ -1,3 +1,5 @@
+from collections.abc import Generator, Sequence
+
 from torch import nn
 
 from ..mytyping import ActivationName, Tensor
@@ -8,24 +10,25 @@ class MLP(nn.Module):
     def __init__(
         self,
         input_dimension: int,
-        middle_dimension: int,
+        middle_dimensions: Sequence[int],
         output_dimension: int,
-        num_layers: int,
         activation: ActivationName,
     ) -> None:
         super().__init__()
         self.input_dimension = input_dimension
-        self.middle_dimension = middle_dimension
+        self.middle_dimensions = middle_dimensions
         self.output_dimension = output_dimension
         self.actfunc_str = activation
 
         self.layers = self._make_layers(
-            num_layers - 1, input_dimension, output_dimension, activation
+            input_dimension, middle_dimensions, activation
         )
-        self.final_layer = nn.Linear(middle_dimension, output_dimension)
+        self.final_layer = nn.Linear(middle_dimensions[-1], output_dimension)
         self.activation = add_activation(activation)
         self.output_activation = (
-            nn.Sigmoid() if output_dimension == 1 else nn.Softmax()
+            nn.Sigmoid()
+            if output_dimension == 1
+            else nn.Softmax(output_dimension)
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -35,19 +38,17 @@ class MLP(nn.Module):
 
     @staticmethod
     def _make_layers(
-        num_layers: int,
         input_dim: int,
-        output_dim: int,
+        mid_dims: Sequence[int],
         activation: ActivationName,
     ) -> nn.Sequential:
-        layers: list[nn.Module] = [
-            nn.Linear(input_dim, output_dim),
-            add_activation(activation),
-        ]
-        _l = [
-            nn.Linear(output_dim, output_dim)
-            if i % 2 == 0
-            else add_activation(activation)
-            for i in range(2 * (num_layers - 1))
-        ]
-        return nn.Sequential(*(layers + _l))
+        def _gen_each_layer() -> Generator[nn.Module, None, None]:
+            for indim, outdim in inout_pairs:
+                yield nn.Linear(indim, outdim)
+                yield add_activation(activation)
+
+        dims = [input_dim] + list(mid_dims)
+        inout_pairs = zip(dims, dims[1:])
+        layers = list(_gen_each_layer())
+
+        return nn.Sequential(*layers)

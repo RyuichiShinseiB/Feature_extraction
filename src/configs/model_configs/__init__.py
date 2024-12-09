@@ -3,8 +3,11 @@ from .autoencoder_configs import (
     ExtractConfig,
     MAEViTModelConfig,
     TrainAutoencoderConfig,
+    TrainAutoencoderConfigV2,
     TrainMAEViTConfig,
+)
+from .base_configs import (
     dict2dataclass,
     dictconfig2dataclass,
 )
-from .network_configs import TrainClassificationModel
+from .classification_configs import TrainClassificationModel

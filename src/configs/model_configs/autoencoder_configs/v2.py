@@ -9,7 +9,7 @@ from ..base_configs import (
 
 
 @dataclass
-class _ModelConfig(RecursiveDataclass):
+class _AutoencoderModelConfig(RecursiveDataclass):
     name: str
     encoder: NetworkConfig
     decoder: NetworkConfig
@@ -17,6 +17,22 @@ class _ModelConfig(RecursiveDataclass):
 
 @dataclass
 class TrainAutoencoderConfigV2(RecursiveDataclass):
-    model: _ModelConfig
+    model: _AutoencoderModelConfig
+    train: TrainConfig
+    dataset: TrainDatasetConfig
+
+
+@dataclass
+class _VAEModelConfig(RecursiveDataclass):
+    name: str
+    encoder: NetworkConfig
+    latent_mean: NetworkConfig
+    latent_var: NetworkConfig
+    decoder: NetworkConfig
+
+
+@dataclass
+class TrainVAEConfig(RecursiveDataclass):
+    model: _VAEModelConfig
     train: TrainConfig
     dataset: TrainDatasetConfig

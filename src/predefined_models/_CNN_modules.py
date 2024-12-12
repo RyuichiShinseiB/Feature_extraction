@@ -96,6 +96,7 @@ def add_activation(
     nn.Tanh,
     nn.Identity,
     nn.Softplus,
+    nn.SiLU,
 ]:
     """Add the specified activation function
 
@@ -136,6 +137,8 @@ def add_activation(
         return nn.Identity()
     elif activation == "softplus":
         return nn.Softplus()
+    elif activation == "silu":
+        return nn.SiLU()
     else:
         raise ValueError(
             f'There is no activation function such as "{activation}"'

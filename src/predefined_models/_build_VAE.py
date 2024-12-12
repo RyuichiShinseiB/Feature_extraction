@@ -65,6 +65,31 @@ class VAEFrame(nn.Module):
     def forward(self, x: Tensor) -> tuple[Tensor, tuple[Tensor, Tensor]]:
         return self._forward(x)
 
+    @torch.no_grad()
+    def evaluation(self, x: Tensor) -> tuple[Tensor, tuple[Tensor, Tensor]]:
+        """Perform inference without computing the gradient.
+
+        Parameters
+        ----------
+        x : Tensor
+            Input data
+
+        Returns
+        -------
+        prediction :Tensor
+            Result for prediction
+        (latent_mean, latent_var) : tuple[Tensor, Tensor]
+            Parameters of latent variables
+        """
+        self.eval()
+        return self._forward(x)
+
+    @torch.no_grad()
+    def generate_geometry(self, z: Tensor) -> Tensor:
+        self.eval()
+        z = self.decoder(z)
+        return z
+
     @classmethod
     def build_from_config(cls, cfg: _VAEModelConfig) -> "VAEFrame":
         if cfg.decoder.network_type == "UpSamplingResNet":

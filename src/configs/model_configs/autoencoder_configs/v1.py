@@ -10,6 +10,7 @@ from ....mytyping import (
 )
 from ..base_configs import (
     ExtractDatasetConfig,
+    NetworkHyperParams,
     RecursiveDataclass,
     TrainConfig,
 )
@@ -51,7 +52,7 @@ class MAEViTHyperParameter(RecursiveDataclass):
 @dataclass
 class AutoencoderModelConfig(RecursiveDataclass):
     name: ModelName = "SimpleCAE64"
-    hyper_parameters: AutoencoderHyperParameter = AutoencoderHyperParameter()
+    hyper_parameters: NetworkHyperParams = NetworkHyperParams()
 
 
 @dataclass

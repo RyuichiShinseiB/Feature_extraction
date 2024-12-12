@@ -96,6 +96,7 @@ def add_activation(
     nn.Tanh,
     nn.Identity,
     nn.Softplus,
+    nn.Softmax,
     nn.SiLU,
 ]:
     """Add the specified activation function

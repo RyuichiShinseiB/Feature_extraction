@@ -104,6 +104,43 @@ def dictconfig2dataclass(
 ########## Network configurations ##########
 @dataclass
 class NetworkHyperParams(RecursiveDataclass):
+    """General network hyper parameters
+
+    ## MLP hyper parameters
+    - input_dimension: int | None
+    - middle_dimensions: Sequence[int] | None
+    - output_dimension: int | None
+    - activation: ActivationName | Non
+    - output_activation: ActivationName | None = None
+
+    ## CNN hyper parameters
+    - input_channels: int | None
+    - middle_channels: int | None
+    - output_channels: int | None
+
+    ## VAE hyper parameters
+    - latent_dimensions: int | Non
+    - encoder_base_channels: int | None
+    - decoder_base_channels: int | None
+    - encoder_activation: ActivationName | None
+    - decoder_activation: ActivationName | None
+    - encoder_output_activation: ActivationName | None
+    - decoder_output_activation: ActivationName | None
+
+    ## ResNet hyper parameters
+    - inplanes: int | None
+    - block_name: ResNetBlockName | None
+    - layers: tuple[int, int, int, int] | None
+    - input_size: Sequence[int] | None
+    - input_resolusino: ActivationName | None
+
+
+    Raises
+    ------
+    ValueError
+        In case of set `layers`,
+    """
+
     # for mlp model
     input_dimension: int | None = None
     middle_dimensions: Sequence[int] | None = None
@@ -128,8 +165,8 @@ class NetworkHyperParams(RecursiveDataclass):
     inplanes: int | None = None
     block_name: ResNetBlockName | None = None
     layers: tuple[int, int, int, int] | None = None
-    input_size: Sequence[int] | None = None
     output_activation: ActivationName | None = None
+    input_resolution: int | None = None
 
     def __post_init__(self) -> None:
         if self.layers is not None and len(self.layers) != 4:

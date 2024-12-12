@@ -137,6 +137,8 @@ def add_activation(
         return nn.Identity()
     elif activation == "softplus":
         return nn.Softplus()
+    elif activation == "softmax":
+        return nn.Softmax(1)
     elif activation == "silu":
         return nn.SiLU()
     else:

@@ -38,6 +38,7 @@ ActivationName = Literal[
     "tanh",
     "identity",
     "softplus",
+    "softmax",
     "silu",
 ]
 

@@ -10,9 +10,7 @@ model:
     encoder_output_activation: "tanh"
     decoder_output_activation: "sigmoid"
     block_name: "sebottleneck"
-    input_size:
-    - 64
-    - 64
+    input_resolution: 64
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}

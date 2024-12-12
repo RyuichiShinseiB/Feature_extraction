@@ -11,9 +11,10 @@ model:
         - 4
         - 6
         - 3
-      output_channels: 32
-      block_name: basicblock
+      output_channels: 128
+      block_name: bottleneck
       activation: relu
+      output_activation: identity
   classifier:
     network_type: MLP
     pretrained_path: null
@@ -23,17 +24,18 @@ model:
         - 100
       output_dimension: 9
       activation: relu
+      output_activation: softmax
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
     lr: 1.0e-4
-    epochs: 100
+    epochs: 1000
     batch_size: 64
     reconst_loss: ce
     latent_loss: null
-    num_save_reconst_image: 10
-    early_stopping: True
+    num_save_reconst_image: 100
+    early_stopping: 10
 
 dataset:
   image_target: CNTForest

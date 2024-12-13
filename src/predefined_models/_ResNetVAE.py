@@ -126,6 +126,7 @@ class DownSamplingResNet(nn.Module):
         inplanes: int = 64,
         zero_init_residual: bool = False,
         activation: ActivationName = "relu",
+        output_activation: ActivationName | None = None,
         norm_layer: Callable[..., nn.Module] | None = None,
         resolution: int = 32,
     ) -> None:
@@ -138,6 +139,9 @@ class DownSamplingResNet(nn.Module):
         )
         self.num_donsampling = 6
         self.each_step_resolution: list[int] = [resolution]
+
+        self.acitvation = activation
+        self.output_acitvation = output_activation or activation
 
         # calculate the resolution of the tensor after down sampling.
         for i in range(self.num_donsampling):
@@ -157,7 +161,6 @@ class DownSamplingResNet(nn.Module):
             bias=False,
         )
         self.bn1 = norm_layer(inplanes)
-        self.actfunc = add_activation(activation)
 
         # self.maxpool = nn.MaxPool2d(
         #     kernel_size=3, stride=2, padding=1, return_indices=True
@@ -206,6 +209,9 @@ class DownSamplingResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(self.inplaneses[4], output_channels)
 
+        self.actfunc = add_activation(activation)
+        self.output_actfunc = add_activation(self.output_acitvation)
+
         _init_weights(self, zero_init_residual)
 
     def _forward_impl(self, x: Tensor) -> Tensor:
@@ -223,7 +229,7 @@ class DownSamplingResNet(nn.Module):
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-        x = self.actfunc(x)
+        x = self.output_actfunc(x)
 
         return x
 

@@ -186,7 +186,7 @@ def main(_cfg: DictConfig) -> None:
                 for x, classes in val_dataloader:
                     model.eval()
                     x = x.to(device)
-                    reconst, latent_params = model(x)
+                    reconst, latent_params = model.evaluation(x)
                     errors = criterion.forward(reconst, x, latent_params)
                     loss = (
                         errors[0]
@@ -267,30 +267,6 @@ def main(_cfg: DictConfig) -> None:
         torch.save(
             model.state_dict(), model_save_path / "model_parameters.pth"
         )
-
-    # fig = plt.figure()
-    # ax = fig.add_subplot(1, 1, 1)
-    # ax.plot(range(len(train_losses)), train_losses, label="train loss")
-    # ax.set_xlabel("iterations")
-    # ax.set_ylabel(
-    #     f"{cfg.train.train_hyperparameter.reconst_loss.upper()} loss"
-    # )
-    # ax.legend()
-    # if not figure_save_path.exists():
-    #     os.makedirs(figure_save_path)
-    # fig.tight_layout()
-    # fig.savefig(figure_save_path / "loss.jpg")
-
-    # for i, reconst_image in enumerate(reconst_images):
-    #     vutils.save_image(
-    #         reconst_image,
-    #         fp=figure_save_path / f"reconst_images{i*save_interval:03}.png",
-    #     )
-
-    # vutils.save_image(
-    #     vutils.make_grid(test_image, normalize=True),
-    #     fp=figure_save_path / "test_images.png",
-    # )
 
 
 if __name__ == "__main__":

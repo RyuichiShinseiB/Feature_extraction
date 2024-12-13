@@ -172,15 +172,15 @@ def _train_model(
             train_acc,
             valid_acc,
         )
-        if epoch % progress_interval == 0 or epoch == 1:
-            print(
-                "Epoch: {}/{} |Train loss: {:.3f} |Valid loss: {:.3f}".format(
-                    epoch,
-                    max_epoch,
-                    mean_train_loss,
-                    mean_valid_loss,
-                )
+        print(
+            "Epoch: {}/{} |Train loss: {:.3f} |Valid loss: {:.3f}".format(
+                epoch,
+                max_epoch,
+                mean_train_loss,
+                mean_valid_loss,
             )
+        )
+        if epoch % progress_interval == 0 or epoch == 1:
             writer.add_embedding(
                 torch.concat(valid_recorder["feature_map"]),
                 metadata=torch.concat(valid_recorder["target"]),
@@ -197,8 +197,8 @@ def _train_model(
 
 @hydra.main(
     version_base=None,
-    config_path="../configs/train_conf",
-    config_name="classification",
+    config_path="../configs/train_conf/classifilation",
+    config_name="ResNet",
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
@@ -401,6 +401,8 @@ def main(_cfg: DictConfig) -> None:
         torch.save(
             model.state_dict(), model_save_path / "model_parameters.pth"
         )
+
+    print("Completed without any happening.")
 
 
 if __name__ == "__main__":

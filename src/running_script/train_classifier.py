@@ -281,7 +281,9 @@ def main(_cfg: DictConfig) -> None:
 
     # オプティマイザの設定
     optimizer = optim.Adam(
-        model.parameters(), cfg.train.train_hyperparameter.lr
+        model.parameters(),
+        cfg.train.train_hyperparameter.lr,
+        weight_decay=cfg.train.train_hyperparameter.weight_decay,
     )
 
     # TensorBoard による学習経過の追跡

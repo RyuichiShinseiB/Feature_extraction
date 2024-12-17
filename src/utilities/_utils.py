@@ -1,6 +1,7 @@
 # Standard Library
 from dataclasses import asdict
 from io import BytesIO
+from itertools import chain
 from pathlib import Path
 from pprint import pprint
 from typing import (
@@ -21,7 +22,7 @@ from omegaconf import DictConfig, OmegaConf
 from torch import nn
 from torch.utils.data import DataLoader, Subset, random_split
 from torchvision.datasets import ImageFolder, VisionDataset
-from torchvision.datasets.folder import find_classes, make_dataset, pil_loader
+from torchvision.datasets.folder import make_dataset, pil_loader
 from torchvision.transforms import transforms
 from tqdm import tqdm
 
@@ -90,6 +91,7 @@ def get_dataloader(
     shuffle: bool = True,
     generator_seed: int | None = 42,
     extraction: bool = False,
+    cls_conditions: dict[int, list[str]] | None = None,
 ) -> DataLoader:
     ...
 
@@ -104,6 +106,7 @@ def get_dataloader(
     shuffle: bool = True,
     generator_seed: int | None = 42,
     extraction: bool = False,
+    cls_conditions: dict[int, list[str]] | None = None,
 ) -> tuple[DataLoader, DataLoader]:
     ...
 
@@ -117,6 +120,7 @@ def get_dataloader(
     shuffle: bool = True,
     generator_seed: int | None = 42,
     extraction: bool = False,
+    cls_conditions: dict[int, list[str]] | None = None,
 ) -> tuple[DataLoader, DataLoader] | DataLoader:
     ...
 
@@ -129,6 +133,7 @@ def get_dataloader(
     shuffle: bool = True,
     generator_seed: int | None = 42,
     extraction: bool = False,
+    cls_conditions: dict[int, list[str]] | None = None,
 ) -> tuple[DataLoader, DataLoader] | DataLoader:
     """specifying parameters and output dataloader
 
@@ -144,21 +149,28 @@ def get_dataloader(
         The dataloader is shuffled if True, by default True
     split_ratio : tuple[float, float] | None, optional
         Split training and validation if not None, by default None
+    cls_conditions: dict[int, list[str]] | None, optional
+        Works as a substitute for `target_transform`. The key is the new class and the value is the list of source classes corresponding to that class.
 
     Returns
     -------
     DataLoader
-    """
+    """  # noqa: E501
     transform = transforms.Compose(
         [
             str2transform(name, value)
             for name, value in dataset_transform.items()
         ]
     )
+
     if extraction:
-        dataset = ForExtractFolder(dataset_path, transform=transform)
+        dataset = ForExtractFolder(
+            dataset_path, transform=transform, cls_conditions=cls_conditions
+        )
     else:
-        dataset = ImageFolder(dataset_path, transform)
+        dataset = MyImageFolder(
+            dataset_path, transform=transform, cls_conditions=cls_conditions
+        )
 
     if split_ratio is None:
         return DataLoader(dataset, batch_size, shuffle, num_workers=2)
@@ -332,7 +344,7 @@ def find_project_root(
     raise FileNotFoundError(f"{marker} not found in any parent directories.")
 
 
-class ForExtractFolder(VisionDataset):
+class BaseMyDataset(VisionDataset):
     def __init__(
         self,
         root: str | Path,
@@ -341,11 +353,14 @@ class ForExtractFolder(VisionDataset):
         target_transform: Callable | None = None,
         loader: Callable[[str], Any] = pil_loader,
         is_valid_file: Callable[[str], bool] | None = None,
+        cls_conditions: dict[int, list[str]] | None = None,
     ) -> None:
-        super().__init__(
-            root, transform=transform, target_transform=target_transform
-        )
+        super().__init__(root, transform=transform)
+
+        self.is_using_cls = self._is_using_cls(cls_conditions)
+
         classes, class_to_idx = self.find_classes(self.root)
+
         samples = self.make_dataset(
             self.root, class_to_idx, extensions, is_valid_file
         )
@@ -354,8 +369,12 @@ class ForExtractFolder(VisionDataset):
         self.extensions = extensions
         self.classes = classes
         self.class_to_idx = class_to_idx
+        self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.samples = samples
         self.targets = [s[1] for s in samples]
+        self.target_transform = target_transform or self._target_transform(
+            cls_conditions
+        )
 
     @staticmethod
     def make_dataset(
@@ -372,9 +391,107 @@ class ForExtractFolder(VisionDataset):
             )
             return cast(list[tuple[str, int]], made_dataset)
 
-    def find_classes(self, directory: str) -> tuple[list[str], dict[str, int]]:
-        found_classes = find_classes(directory)
-        return cast(tuple[list[str], dict[str, int]], found_classes)
+    def find_classes(
+        self, root: str | Path
+    ) -> tuple[list[str], dict[str, int]]:
+        if isinstance(root, str):
+            root = Path(root)
+
+        dir_names = sorted(p.name for p in root.iterdir() if p.is_dir())
+        cls_to_idx = {
+            c: i for i, c in enumerate(dir_names) if self.is_using_cls(c)
+        }
+        classes = list(cls_to_idx.keys())
+
+        return classes, cls_to_idx
+
+    @staticmethod
+    def _is_using_cls(
+        conditions: dict[int, list[str]] | None = None,
+    ) -> Callable[[str], bool]:
+        if conditions is None:
+            return lambda _: True
+        valid_classes = set(chain.from_iterable(conditions.values()))
+
+        def filter_(c: str) -> bool:
+            return c in valid_classes
+
+        return filter_
+
+    @staticmethod
+    def _target_transform(
+        conditions: dict[int, list[str]] | None = None,
+    ) -> Callable[[int], int]:
+        if conditions is None:
+            return lambda c: c
+
+        def _tt(c: int) -> int:
+            for cls, class_names in conditions.items():
+                if str(c) in class_names:
+                    return cls
+            raise ValueError
+
+        return _tt
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+
+class MyImageFolder(BaseMyDataset):
+    def __init__(
+        self,
+        root: str | Path,
+        extensions: tuple[str, ...] | None = IMG_EXTENSIONS,
+        transform: Callable | None = None,
+        target_transform: Callable | None = None,
+        loader: Callable[[str], Any] = pil_loader,
+        is_valid_file: Callable[[str], bool] | None = None,
+        cls_conditions: dict[int, list[str]] | None = None,
+    ) -> None:
+        super().__init__(
+            root,
+            extensions,
+            transform,
+            target_transform,
+            loader,
+            is_valid_file,
+            cls_conditions,
+        )
+
+    def __getitem__(self, index: int) -> tuple[Tensor, int, int]:
+        path, base_target = self.samples[index]
+
+        sample = self.loader(path)
+        if self.transform is not None:
+            sample = self.transform(sample)
+        if self.target_transform is None:
+            target = base_target
+        else:
+            target = self.target_transform(base_target)
+
+        return sample, target, base_target
+
+
+class ForExtractFolder(BaseMyDataset):
+    def __init__(
+        self,
+        root: str | Path,
+        extensions: tuple[str, ...] | None = IMG_EXTENSIONS,
+        transform: Callable | None = None,
+        target_transform: Callable | None = None,
+        loader: Callable[[str], Any] = pil_loader,
+        is_valid_file: Callable[[str], bool] | None = None,
+        cls_conditions: dict[int, list[str]] | None = None,
+    ) -> None:
+        super().__init__(
+            root,
+            extensions,
+            transform,
+            target_transform,
+            loader,
+            is_valid_file,
+            cls_conditions,
+        )
 
     def __getitem__(self, index: int) -> tuple[Tensor, int, str, str]:
         path, target = self.samples[index]
@@ -389,9 +506,6 @@ class ForExtractFolder(VisionDataset):
             target = self.target_transform(target)
 
         return sample, target, dirname, fname
-
-    def __len__(self) -> int:
-        return len(self.samples)
 
 
 class EarlyStopping:

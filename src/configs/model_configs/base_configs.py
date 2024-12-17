@@ -146,6 +146,7 @@ class NetworkHyperParams(RecursiveDataclass):
     middle_dimensions: Sequence[int] | None = None
     output_dimension: int | None = None
     activation: ActivationName | None = None
+    dropout_rate: float = 0.0
 
     # for cnn model
     input_channels: int | None = None
@@ -198,6 +199,7 @@ class TrainHyperParameter(RecursiveDataclass):
     batch_size: int = 64
     reconst_loss: Literal["bce", "mse", "ce", "None"] = "bce"
     latent_loss: Literal["softplus", "general"] | None = None
+    weight_decay: float = 0.0
     num_save_reconst_image: int = 5
     early_stopping: int | None = None
 
@@ -213,6 +215,7 @@ class TrainConfig(RecursiveDataclass):
 class TrainDatasetConfig(RecursiveDataclass):
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
     path: Path = Path("../../data/processed/CNTForest/cnt_sem_64x64/10k")
+    cls_conditions: dict[int, list[str]] | None = None
     transform: TransformsNameValue = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -223,6 +226,13 @@ class TrainDatasetConfig(RecursiveDataclass):
 @dataclass
 class ExtractDatasetConfig(RecursiveDataclass):
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
-    train_path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
-    check_path: str = "../../data/processed/CNTForest/cnt_sem_64x64/10k"
+    train_path: Path = Path("../../data/processed/CNTForest/cnt_sem_64x64/10k")
+    check_path: Path = Path("../../data/processed/CNTForest/cnt_sem_64x64/10k")
+    cls_conditions: dict[int, list[str]] | None = None
     transform: TransformsNameValue = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.train_path, Path):
+            self.train_path = Path(self.train_path)
+        if not isinstance(self.check_path, Path):
+            self.check_path = Path(self.check_path)

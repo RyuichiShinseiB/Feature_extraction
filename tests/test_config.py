@@ -4,6 +4,7 @@ from typing import Any
 from hydra import compose, initialize
 
 from src.configs.model_configs import TrainClassificationModel
+from src.configs.model_configs.base_configs import TrainDatasetConfig
 from src.predefined_models import LoadModel
 
 
@@ -42,17 +43,30 @@ def test_load_cfg_to_ResNet() -> None:
     with initialize("../src/configs/train_conf/", version_base=None):
         _cfg = compose("classification")
     cfg = TrainClassificationModel.from_dictconfig(_cfg)
-    model = LoadModel.load_model(
+    _model = LoadModel.load_model(
         cfg.model.feature.network_type,
         cfg.model.feature.hyper_parameters,
     )
 
 
 def test_load_cfg_to_MLP() -> None:
-    with initialize("../src/configs/train_conf/", version_base=None):
-        _cfg = compose("classification")
+    with initialize(
+        "../src/configs/train_conf/classifilation", version_base=None
+    ):
+        _cfg = compose("ResNet-highlow")
     cfg = TrainClassificationModel.from_dictconfig(_cfg)
-    model = LoadModel.load_model(
+    _model = LoadModel.load_model(
         cfg.model.classifier.network_type,
         cfg.model.classifier.hyper_parameters,
     )
+
+
+def test_datasetconfig_for_training() -> None:
+    with initialize(
+        "../src/configs/train_conf/classifilation", version_base=None
+    ):
+        _cfg = compose("ResNet-highlow")
+
+    cfg = TrainDatasetConfig.from_dictconfig(_cfg.dataset)
+
+    print(cfg)

@@ -26,6 +26,7 @@ pytorch_whl
 models/*
 reports/
 tmp
+poetry.lock
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

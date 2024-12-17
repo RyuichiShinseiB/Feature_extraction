@@ -7,13 +7,17 @@ model:
       input_channels: 1
       inplanes: 64
       layers:
+        # - 2
+        # - 2
+        # - 2
+        # - 2
         - 3
         - 4
         - 6
         - 3
-      output_channels: 128
+      output_channels: 32
       block_name: bottleneck
-      activation: relu
+      activation: selu
       output_activation: identity
   classifier:
     network_type: MLP
@@ -21,21 +25,23 @@ model:
     hyper_parameters:
       input_dimension: ${model.feature.hyper_parameters.output_channels}
       middle_dimensions:
-        - 100
+        - 128
       output_dimension: 9
-      activation: relu
+      dropout: 0.0
+      activation: selu
       output_activation: softmax
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
     lr: 1.0e-4
-    epochs: 1000
+    epochs: 10000
     batch_size: 64
     reconst_loss: ce
     latent_loss: null
-    num_save_reconst_image: 100
-    early_stopping: 10
+    weight_decay: 1.0e-4
+    num_save_reconst_image: 1000
+    early_stopping: 50
 
 dataset:
   image_target: CNTForest

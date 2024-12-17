@@ -14,16 +14,19 @@ class MLP(nn.Module):
         output_dimension: int,
         activation: ActivationName,
         output_activation: ActivationName | None,
+        dropout_rate: float = 0.3,
     ) -> None:
         super().__init__()
         self.input_dimension = input_dimension
         self.middle_dimensions = middle_dimensions
         self.output_dimension = output_dimension
         self.actfunc_str = activation
+        self.dropout_rate = dropout_rate
 
         self.layers = self._make_layers(
             input_dimension, middle_dimensions, activation
         )
+        self.dropout = nn.Dropout(self.dropout_rate, inplace=True)
         self.final_layer = nn.Linear(middle_dimensions[-1], output_dimension)
         self.activation = add_activation(activation)
         if output_activation is None:
@@ -38,8 +41,8 @@ class MLP(nn.Module):
         x = self.output_activation(self.final_layer(x))
         return x
 
-    @staticmethod
     def _make_layers(
+        self,
         input_dim: int,
         mid_dims: Sequence[int],
         activation: ActivationName,
@@ -48,6 +51,7 @@ class MLP(nn.Module):
             for indim, outdim in inout_pairs:
                 yield nn.Linear(indim, outdim)
                 yield add_activation(activation)
+                # yield nn.Dropout(self.dropout_rate)
 
         dims = [input_dim] + list(mid_dims)
         inout_pairs = zip(dims, dims[1:])

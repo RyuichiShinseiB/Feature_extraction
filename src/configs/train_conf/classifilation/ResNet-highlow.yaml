@@ -1,5 +1,5 @@
 model:
-  name: ClassifierCNTforest
+  name: ClassifierReflectance
   feature:
     network_type: DownSamplingResNet
     pretrained_path: null
@@ -26,10 +26,10 @@ model:
       input_dimension: ${model.feature.hyper_parameters.output_channels}
       middle_dimensions:
         - 128
-      output_dimension: 9
+      output_dimension: 1
       dropout_rate: 0.0
       activation: selu
-      output_activation: softmax
+      output_activation: sigmoid
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
@@ -37,7 +37,7 @@ train:
     lr: 1.0e-4
     epochs: 10000
     batch_size: 64
-    reconst_loss: ce
+    reconst_loss: bce
     latent_loss: null
     weight_decay: 1.0e-4
     num_save_reconst_image: 1000

@@ -146,7 +146,7 @@ class NetworkHyperParams(RecursiveDataclass):
     middle_dimensions: Sequence[int] | None = None
     output_dimension: int | None = None
     activation: ActivationName | None = None
-    dropout_rate: float = 0.0
+    dropout_rate: float | None = None
 
     # for cnn model
     input_channels: int | None = None

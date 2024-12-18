@@ -27,7 +27,7 @@ model:
       middle_dimensions:
         - 128
       output_dimension: 9
-      dropout: 0.0
+      dropout_rate: 0.0
       activation: selu
       output_activation: softmax
 

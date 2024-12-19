@@ -76,4 +76,6 @@ def model_define(  # noqa: C901
     elif model_name == "ResNetVAE":
         return ResNetVAE(**hyper_parameters, device=device)
     else:
-        raise ValueError(f'There is no defined model such as "{model_name}"')
+        raise NotImplementedError(
+            f'There is no defined model such as "{model_name}"'
+        )

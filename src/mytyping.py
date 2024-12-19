@@ -30,7 +30,7 @@ ModelName = Literal[
     "MLP",
 ]
 
-ActivationName = Literal[
+ActFuncName = Literal[
     "relu",
     "selu",
     "leakyrelu",

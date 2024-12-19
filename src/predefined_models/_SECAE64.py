@@ -2,7 +2,7 @@
 from torch import nn
 
 # Local Library
-from ..mytyping import ActivationName, Device, Tensor
+from ..mytyping import ActFuncName, Device, Tensor
 from ._CNN_modules import DownShape, SELayer, UpShape
 
 
@@ -12,23 +12,23 @@ class Encoder(nn.Module):
         input_channels: int = 1,
         encoder_base_channels: int = 64,
         latent_dimensions: int = 10,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "relu",
         device: Device = "cpu",
     ) -> None:
         super(Encoder, self).__init__()
-        if output_activation is None:
-            output_activation = activation
+        if output_actfunc is None:
+            output_actfunc = actfunc
 
         self.device = device
 
         self.l1 = nn.Sequential(
-            DownShape(input_channels, encoder_base_channels, activation),
+            DownShape(input_channels, encoder_base_channels, actfunc),
             SELayer(encoder_base_channels),
         )
         self.l2 = nn.Sequential(
             DownShape(
-                encoder_base_channels, encoder_base_channels * 2, activation
+                encoder_base_channels, encoder_base_channels * 2, actfunc
             ),
             SELayer(encoder_base_channels * 2),
         )
@@ -36,7 +36,7 @@ class Encoder(nn.Module):
             DownShape(
                 encoder_base_channels * 2,
                 encoder_base_channels * 4,
-                activation,
+                actfunc,
             ),
             SELayer(encoder_base_channels * 4),
         )
@@ -44,7 +44,7 @@ class Encoder(nn.Module):
             DownShape(
                 encoder_base_channels * 4,
                 encoder_base_channels * 8,
-                activation,
+                actfunc,
             ),
             SELayer(encoder_base_channels * 8),
         )
@@ -52,7 +52,7 @@ class Encoder(nn.Module):
             DownShape(
                 encoder_base_channels * 8,
                 encoder_base_channels * 16,
-                activation,
+                actfunc,
             ),
             SELayer(encoder_base_channels * 16),
         )
@@ -60,7 +60,7 @@ class Encoder(nn.Module):
             DownShape(
                 encoder_base_channels * 16,
                 latent_dimensions,
-                output_activation,
+                output_actfunc,
             ),
             SELayer(latent_dimensions),
         )
@@ -85,22 +85,22 @@ class Decoder(nn.Module):
         latent_dimensions: int = 10,
         decoder_base_channels: int = 64,
         input_channels: int = 1,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "tanh",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "tanh",
         device: Device = "cpu",
     ) -> None:
         super(Decoder, self).__init__()
         self.device = device
 
         self.l1 = nn.Sequential(
-            UpShape(latent_dimensions, decoder_base_channels * 16, activation),
+            UpShape(latent_dimensions, decoder_base_channels * 16, actfunc),
             SELayer(decoder_base_channels * 16),
         )
         self.l2 = nn.Sequential(
             UpShape(
                 decoder_base_channels * 16,
                 decoder_base_channels * 8,
-                activation,
+                actfunc,
             ),
             SELayer(decoder_base_channels * 8),
         )
@@ -108,7 +108,7 @@ class Decoder(nn.Module):
             UpShape(
                 decoder_base_channels * 8,
                 decoder_base_channels * 4,
-                activation,
+                actfunc,
             ),
             SELayer(decoder_base_channels * 4),
         )
@@ -116,18 +116,16 @@ class Decoder(nn.Module):
             UpShape(
                 decoder_base_channels * 4,
                 decoder_base_channels * 2,
-                activation,
+                actfunc,
             ),
             SELayer(decoder_base_channels * 2),
         )
         self.l5 = nn.Sequential(
-            UpShape(
-                decoder_base_channels * 2, decoder_base_channels, activation
-            ),
+            UpShape(decoder_base_channels * 2, decoder_base_channels, actfunc),
             SELayer(decoder_base_channels),
         )
         self.l6 = nn.Sequential(
-            UpShape(decoder_base_channels, input_channels, output_activation),
+            UpShape(decoder_base_channels, input_channels, output_actfunc),
             SELayer(input_channels),
         )
 
@@ -152,10 +150,10 @@ class SECAE64(nn.Module):
         latent_dimensions: int,
         encoder_base_channels: int,
         decoder_base_channels: int,
-        encoder_activation: ActivationName = "relu",
-        decoder_activation: ActivationName = "relu",
-        encoder_output_activation: ActivationName = "sigmoid",
-        decoder_output_activation: ActivationName = "tanh",
+        encoder_actfunc: ActFuncName = "relu",
+        decoder_actfunc: ActFuncName = "relu",
+        encoder_output_actfunc: ActFuncName = "sigmoid",
+        decoder_output_actfunc: ActFuncName = "tanh",
         device: Device = "cpu",
     ) -> None:
         super(SECAE64, self).__init__()
@@ -164,16 +162,16 @@ class SECAE64(nn.Module):
             input_channels,
             encoder_base_channels,
             latent_dimensions,
-            encoder_activation,
-            encoder_output_activation,
+            encoder_actfunc,
+            encoder_output_actfunc,
             device,
         )
         self.decoder = Decoder(
             latent_dimensions,
             decoder_base_channels,
             input_channels,
-            decoder_activation,
-            decoder_output_activation,
+            decoder_actfunc,
+            decoder_output_actfunc,
             device,
         )
 

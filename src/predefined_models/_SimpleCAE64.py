@@ -2,11 +2,11 @@
 from torch import nn
 
 # Local Library
-from ..mytyping import ActivationName, Device, Tensor
-from ._CNN_modules import add_activation
+from ..mytyping import ActFuncName, Device, Tensor
+from ._CNN_modules import add_actfunc
 
-# from src import ActivationName, Device, Tensor
-# from src.predefined_models._CNN_modules import add_activation
+# from src import ActFuncName, Device, Tensor
+# from src.predefined_models._CNN_modules import add_actfunc
 
 
 class Encoder(nn.Module):
@@ -15,8 +15,8 @@ class Encoder(nn.Module):
         input_channels: int = 1,
         encoder_base_channels: int = 64,
         latent_dimensions: int = 10,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "relu",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
@@ -26,7 +26,7 @@ class Encoder(nn.Module):
                 input_channels, encoder_base_channels, 4, 2, 1, bias=False
             ),
             nn.BatchNorm2d(encoder_base_channels),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l2 = nn.Sequential(
             nn.Conv2d(
@@ -38,7 +38,7 @@ class Encoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(encoder_base_channels * 2),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l3 = nn.Sequential(
             nn.Conv2d(
@@ -50,7 +50,7 @@ class Encoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(encoder_base_channels * 4),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l4 = nn.Sequential(
             nn.Conv2d(
@@ -62,7 +62,7 @@ class Encoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(encoder_base_channels * 8),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l5 = nn.Sequential(
             nn.Conv2d(
@@ -74,7 +74,7 @@ class Encoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(encoder_base_channels * 16),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l6 = nn.Sequential(
             nn.Conv2d(
@@ -86,7 +86,7 @@ class Encoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(latent_dimensions),
-            add_activation(output_activation),
+            add_actfunc(output_actfunc),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -107,8 +107,8 @@ class Decoder(nn.Module):
         latent_dimensions: int = 10,
         decoder_base_channels: int = 64,
         input_channels: int = 1,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "tanh",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "tanh",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
@@ -123,7 +123,7 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(decoder_base_channels * 16),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l2 = nn.Sequential(
             nn.ConvTranspose2d(
@@ -135,7 +135,7 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(decoder_base_channels * 8),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l3 = nn.Sequential(
             nn.ConvTranspose2d(
@@ -147,7 +147,7 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(decoder_base_channels * 4),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l4 = nn.Sequential(
             nn.ConvTranspose2d(
@@ -159,7 +159,7 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(decoder_base_channels * 2),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l5 = nn.Sequential(
             nn.ConvTranspose2d(
@@ -171,14 +171,14 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(decoder_base_channels),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         self.l6 = nn.Sequential(
             nn.ConvTranspose2d(
                 decoder_base_channels, input_channels, 4, 2, 1, bias=False
             ),
             nn.BatchNorm2d(input_channels),
-            add_activation(output_activation),
+            add_actfunc(output_actfunc),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -198,10 +198,10 @@ class SimpleCAE64(nn.Module):
         latent_dimensions: int,
         encoder_base_channels: int,
         decoder_base_channels: int,
-        encoder_activation: ActivationName = "relu",
-        decoder_activation: ActivationName = "relu",
-        encoder_output_activation: ActivationName = "relu",
-        decoder_output_activation: ActivationName = "tanh",
+        encoder_actfunc: ActFuncName = "relu",
+        decoder_actfunc: ActFuncName = "relu",
+        encoder_output_actfunc: ActFuncName = "relu",
+        decoder_output_actfunc: ActFuncName = "tanh",
         device: Device = "cpu",
     ) -> None:
         super(SimpleCAE64, self).__init__()
@@ -211,8 +211,8 @@ class SimpleCAE64(nn.Module):
             input_channels,
             encoder_base_channels,
             latent_dimensions,
-            encoder_activation,
-            encoder_output_activation,
+            encoder_actfunc,
+            encoder_output_actfunc,
             device,
         )
 
@@ -220,8 +220,8 @@ class SimpleCAE64(nn.Module):
             latent_dimensions,
             decoder_base_channels,
             input_channels,
-            decoder_activation,
-            decoder_output_activation,
+            decoder_actfunc,
+            decoder_output_actfunc,
             device,
         )
 

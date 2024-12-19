@@ -5,12 +5,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..mytyping import ActivationName, Device, ResNetBlockName, Tensor
+from ..mytyping import ActFuncName, Device, ResNetBlockName, Tensor
 from ._CNN_modules import (
     MyBasicBlock,
     MyBottleneck,
     SEBottleneck,
-    add_activation,
+    add_actfunc,
     conv2d3x3,
 )
 
@@ -21,21 +21,19 @@ def _make_resnet_layer(
     output_channels: int,
     num_blocks: int,
     stride: int = 1,
-    activation: ActivationName = "relu",
+    actfunc: ActFuncName = "relu",
     how_sampling: Literal["down", "up"] = "down",
 ) -> nn.Sequential:
     layers = []
     layers.append(
-        block(
-            input_channels, output_channels, stride, activation, how_sampling
-        )
+        block(input_channels, output_channels, stride, actfunc, how_sampling)
     )
     for _ in range(1, num_blocks):
         layers.append(
             block(
                 output_channels,
                 output_channels,
-                activation=activation,
+                actfunc=actfunc,
                 how_sampling=how_sampling,
             )
         )
@@ -125,8 +123,8 @@ class DownSamplingResNet(nn.Module):
         output_channels: int = 1000,
         inplanes: int = 64,
         zero_init_residual: bool = False,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName | None = None,
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName | None = None,
         norm_layer: Callable[..., nn.Module] | None = None,
         resolution: int = 32,
     ) -> None:
@@ -140,8 +138,8 @@ class DownSamplingResNet(nn.Module):
         self.num_donsampling = 6
         self.each_step_resolution: list[int] = [resolution]
 
-        self.acitvation = activation
-        self.output_acitvation = output_activation or activation
+        self.acitvation = actfunc
+        self.output_acitvation = output_actfunc or actfunc
 
         # calculate the resolution of the tensor after down sampling.
         for i in range(self.num_donsampling):
@@ -168,7 +166,7 @@ class DownSamplingResNet(nn.Module):
         self.downsample = nn.Sequential(
             conv2d3x3(inplanes, inplanes, stride=2, how_sampling="down"),
             nn.BatchNorm2d(inplanes),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
 
         self.resblocks1 = _make_resnet_layer(
@@ -176,7 +174,7 @@ class DownSamplingResNet(nn.Module):
             self.inplaneses[0],
             self.inplaneses[1],
             layers[0],
-            activation=activation,
+            actfunc=actfunc,
         )
 
         self.resblocks2 = _make_resnet_layer(
@@ -185,7 +183,7 @@ class DownSamplingResNet(nn.Module):
             self.inplaneses[2],
             layers[1],
             stride=2,
-            activation=activation,
+            actfunc=actfunc,
         )
 
         self.resblocks3 = _make_resnet_layer(
@@ -194,7 +192,7 @@ class DownSamplingResNet(nn.Module):
             self.inplaneses[3],
             layers[2],
             stride=2,
-            activation=activation,
+            actfunc=actfunc,
         )
 
         self.resblocks4 = _make_resnet_layer(
@@ -203,14 +201,14 @@ class DownSamplingResNet(nn.Module):
             self.inplaneses[4],
             layers[3],
             stride=2,
-            activation=activation,
+            actfunc=actfunc,
         )
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(self.inplaneses[4], output_channels)
 
-        self.actfunc = add_activation(activation)
-        self.output_actfunc = add_activation(self.output_acitvation)
+        self.actfunc = add_actfunc(actfunc)
+        self.output_actfunc = add_actfunc(self.output_acitvation)
 
         _init_weights(self, zero_init_residual)
 
@@ -258,8 +256,8 @@ class UpSamplingResNet(nn.Module):
         output_channels: int = 1,
         inplanes: int = 64,
         zero_init_residual: bool = False,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "sigmoid",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "sigmoid",
         norm_layer: Callable[..., nn.Module] | None = None,
         *,
         resolution: int = 64,
@@ -285,7 +283,7 @@ class UpSamplingResNet(nn.Module):
             _inplanes(inplanes * block.expansion, 2, 4)
         )
 
-        self.output_actfunc = add_activation(output_activation)
+        self.output_actfunc = add_actfunc(output_actfunc)
         self.conv1_t = nn.ConvTranspose2d(
             self.inplaneses[0],
             output_channels,
@@ -296,7 +294,7 @@ class UpSamplingResNet(nn.Module):
             output_padding=1,
         )
         self.bn1_t = norm_layer(self.inplaneses[0])
-        self.actfunc = add_activation(activation)
+        self.actfunc = add_actfunc(actfunc)
         self.downsampling_t = conv2d3x3(
             self.inplaneses[0], self.inplaneses[0], stride=2, how_sampling="up"
         )
@@ -305,7 +303,7 @@ class UpSamplingResNet(nn.Module):
             self.inplaneses[1],
             self.inplaneses[0],
             layers[0],
-            activation=activation,
+            actfunc=actfunc,
             how_sampling="up",
         )
         self.resblock2_t = _make_resnet_layer(
@@ -314,7 +312,7 @@ class UpSamplingResNet(nn.Module):
             self.inplaneses[1],
             layers[1],
             stride=2,
-            activation=activation,
+            actfunc=actfunc,
             how_sampling="up",
         )
         self.resblock3_t = _make_resnet_layer(
@@ -323,7 +321,7 @@ class UpSamplingResNet(nn.Module):
             self.inplaneses[2],
             layers[2],
             stride=2,
-            activation=activation,
+            actfunc=actfunc,
             how_sampling="up",
         )
         self.resblock4_t = _make_resnet_layer(
@@ -332,7 +330,7 @@ class UpSamplingResNet(nn.Module):
             self.inplaneses[3],
             layers[3],
             stride=2,
-            activation=activation,
+            actfunc=actfunc,
             how_sampling="up",
         )
 
@@ -398,10 +396,10 @@ class ResNetVAE(nn.Module):
         latent_dimensions: int,
         encoder_base_channels: int,
         decoder_base_channels: int,
-        encoder_activation: ActivationName,
-        decoder_activation: ActivationName,
-        encoder_output_activation: ActivationName,
-        decoder_output_activation: ActivationName,
+        encoder_actfunc: ActFuncName,
+        decoder_actfunc: ActFuncName,
+        encoder_output_actfunc: ActFuncName,
+        decoder_output_actfunc: ActFuncName,
         device: Device,
         input_resolution: int = 64,
         block_name: ResNetBlockName | None = None,
@@ -416,17 +414,17 @@ class ResNetVAE(nn.Module):
             input_channels=input_channels,
             output_channels=latent_dimensions,
             inplanes=encoder_base_channels,
-            activation=encoder_activation,
+            actfunc=encoder_actfunc,
             resolution=input_resolution,
         )
 
         self.dit_params = nn.Sequential(
             nn.Linear(latent_dimensions, latent_dimensions),
-            add_activation(encoder_activation),
+            add_actfunc(encoder_actfunc),
             nn.Linear(latent_dimensions, 2 * latent_dimensions),
         )
-        self.mean_layer_activation = add_activation(encoder_output_activation)
-        self.var_layer_activation = add_activation("softplus")
+        self.mean_layer_actfunc = add_actfunc(encoder_output_actfunc)
+        self.var_layer_actfunc = add_actfunc("softplus")
 
         self.decoder = UpSamplingResNet(
             block_name=block_name,
@@ -434,8 +432,8 @@ class ResNetVAE(nn.Module):
             input_channels=latent_dimensions,
             output_channels=input_channels,
             inplanes=decoder_base_channels,
-            activation=decoder_activation,
-            output_activation=decoder_output_activation,
+            actfunc=decoder_actfunc,
+            output_actfunc=decoder_output_actfunc,
             resolution=input_resolution,
         )
 
@@ -457,8 +455,8 @@ class ResNetVAE(nn.Module):
         self, feature_map: Tensor
     ) -> tuple[Tensor, Tensor]:
         mean, var = self.dit_params(feature_map).chunk(2, 1)
-        mean = self.mean_layer_activation(mean)
-        var = self.var_layer_activation(var)
+        mean = self.mean_layer_actfunc(mean)
+        var = self.var_layer_actfunc(var)
         return mean, var
 
     @torch.no_grad()

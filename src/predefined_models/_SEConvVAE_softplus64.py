@@ -3,8 +3,8 @@ import torch
 from torch import nn
 
 # Local Library
-from ..mytyping import ActivationName, Device, Tensor
-from ._CNN_modules import DownShape, SELayer, UpShape, add_activation
+from ..mytyping import ActFuncName, Device, Tensor
+from ._CNN_modules import DownShape, SELayer, UpShape, add_actfunc
 
 
 class VariationalSEEncoder(nn.Module):
@@ -13,21 +13,21 @@ class VariationalSEEncoder(nn.Module):
         input_channels: int = 1,
         encoder_base_channels: int = 64,
         latent_dimension: int = 10,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "relu",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
-        if output_activation is None:
-            output_activation = activation
+        if output_actfunc is None:
+            output_actfunc = actfunc
         self.device = device
         self.l1 = nn.Sequential(
-            DownShape(input_channels, encoder_base_channels, activation),
+            DownShape(input_channels, encoder_base_channels, actfunc),
             SELayer(encoder_base_channels),
         )
         self.l2 = nn.Sequential(
             DownShape(
-                encoder_base_channels, encoder_base_channels * 2, activation
+                encoder_base_channels, encoder_base_channels * 2, actfunc
             ),
             SELayer(encoder_base_channels * 2),
         )
@@ -35,7 +35,7 @@ class VariationalSEEncoder(nn.Module):
             DownShape(
                 encoder_base_channels * 2,
                 encoder_base_channels * 4,
-                activation,
+                actfunc,
             ),
             SELayer(encoder_base_channels * 4),
         )
@@ -43,7 +43,7 @@ class VariationalSEEncoder(nn.Module):
             DownShape(
                 encoder_base_channels * 4,
                 encoder_base_channels * 8,
-                activation,
+                actfunc,
             ),
             SELayer(encoder_base_channels * 8),
         )
@@ -51,7 +51,7 @@ class VariationalSEEncoder(nn.Module):
             DownShape(
                 encoder_base_channels * 8,
                 encoder_base_channels * 16,
-                activation,
+                actfunc,
             ),
             SELayer(encoder_base_channels * 16),
         )
@@ -59,7 +59,7 @@ class VariationalSEEncoder(nn.Module):
             DownShape(
                 encoder_base_channels * 16,
                 encoder_base_channels * 32,
-                activation,
+                actfunc,
             ),
             SELayer(encoder_base_channels * 32),
         )
@@ -67,7 +67,7 @@ class VariationalSEEncoder(nn.Module):
             nn.Linear(
                 encoder_base_channels * 32, latent_dimension, bias=False
             ),
-            add_activation(output_activation),
+            add_actfunc(output_actfunc),
         )
         self.l_var = nn.Sequential(
             nn.Linear(
@@ -97,21 +97,21 @@ class VariationalSEDecoder(nn.Module):
         latent_dimension: int = 10,
         decoder_base_channels: int = 64,
         input_channels: int = 1,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "sigmoid",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "sigmoid",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
         self.device = device
         self.l1 = nn.Sequential(
-            UpShape(latent_dimension, decoder_base_channels * 16, activation),
+            UpShape(latent_dimension, decoder_base_channels * 16, actfunc),
             SELayer(decoder_base_channels * 16),
         )
         self.l2 = nn.Sequential(
             UpShape(
                 decoder_base_channels * 16,
                 decoder_base_channels * 8,
-                activation,
+                actfunc,
             ),
             SELayer(decoder_base_channels * 8),
         )
@@ -119,7 +119,7 @@ class VariationalSEDecoder(nn.Module):
             UpShape(
                 decoder_base_channels * 8,
                 decoder_base_channels * 4,
-                activation,
+                actfunc,
             ),
             SELayer(decoder_base_channels * 4),
         )
@@ -127,18 +127,16 @@ class VariationalSEDecoder(nn.Module):
             UpShape(
                 decoder_base_channels * 4,
                 decoder_base_channels * 2,
-                activation,
+                actfunc,
             ),
             SELayer(decoder_base_channels * 2),
         )
         self.l5 = nn.Sequential(
-            UpShape(
-                decoder_base_channels * 2, decoder_base_channels, activation
-            ),
+            UpShape(decoder_base_channels * 2, decoder_base_channels, actfunc),
             SELayer(decoder_base_channels),
         )
         self.l6 = UpShape(
-            decoder_base_channels, input_channels, output_activation
+            decoder_base_channels, input_channels, output_actfunc
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -158,29 +156,29 @@ class VariationalDecoder(nn.Module):
         latent_dimension: int = 10,
         decoder_base_channels: int = 64,
         input_channels: int = 1,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "sigmoid",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "sigmoid",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
         self.device = device
         self.l1 = UpShape(
-            latent_dimension, decoder_base_channels * 16, activation
+            latent_dimension, decoder_base_channels * 16, actfunc
         )
         self.l2 = UpShape(
-            decoder_base_channels * 16, decoder_base_channels * 8, activation
+            decoder_base_channels * 16, decoder_base_channels * 8, actfunc
         )
         self.l3 = UpShape(
-            decoder_base_channels * 8, decoder_base_channels * 4, activation
+            decoder_base_channels * 8, decoder_base_channels * 4, actfunc
         )
         self.l4 = UpShape(
-            decoder_base_channels * 4, decoder_base_channels * 2, activation
+            decoder_base_channels * 4, decoder_base_channels * 2, actfunc
         )
         self.l5 = UpShape(
-            decoder_base_channels * 2, decoder_base_channels, activation
+            decoder_base_channels * 2, decoder_base_channels, actfunc
         )
         self.l6 = UpShape(
-            decoder_base_channels, input_channels, output_activation
+            decoder_base_channels, input_channels, output_actfunc
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -201,10 +199,10 @@ class SECVAEsoftplus64(nn.Module):
         latent_dimension: int = 10,
         encoder_base_channels: int = 64,
         decoder_base_channels: int = 64,
-        encoder_activation: ActivationName = "relu",
-        decoder_activation: ActivationName = "relu",
-        encoder_output_activation: ActivationName = "sigmoid",
-        decoder_output_activation: ActivationName = "tanh",
+        encoder_actfunc: ActFuncName = "relu",
+        decoder_actfunc: ActFuncName = "relu",
+        encoder_output_actfunc: ActFuncName = "sigmoid",
+        decoder_output_actfunc: ActFuncName = "tanh",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
@@ -214,16 +212,16 @@ class SECVAEsoftplus64(nn.Module):
             input_channels,
             encoder_base_channels,
             latent_dimension,
-            encoder_activation,
-            encoder_output_activation,
+            encoder_actfunc,
+            encoder_output_actfunc,
             device,
         )
         self.decoder = VariationalSEDecoder(
             latent_dimension,
             decoder_base_channels,
             input_channels,
-            decoder_activation,
-            decoder_output_activation,
+            decoder_actfunc,
+            decoder_output_actfunc,
             device,
         )
 

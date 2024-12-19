@@ -5,8 +5,8 @@ from typing import Callable
 from torch import nn
 
 # Local Library
-from ..mytyping import ActivationName, Device, Tensor
-from ._CNN_modules import add_activation
+from ..mytyping import ActFuncName, Device, Tensor
+from ._CNN_modules import add_actfunc
 
 
 class Encoder(nn.Module):
@@ -15,8 +15,8 @@ class Encoder(nn.Module):
         input_channels: int = 1,
         encoder_base_channels: int = 64,
         latent_dimensions: int = 10,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "relu",
         device: Device = "cpu",
     ) -> None:
         """Encoder block of SimpleCAE16
@@ -31,12 +31,12 @@ class Encoder(nn.Module):
             by a factor of 2. , by default 64\n
         latent_dimensions : int, optional
             Number dimension of feature vector, by default 10\n
-        activation : ActivationName, optional
-            Activation function at each layer.
+        actfunc : ActFuncName, optional
+            ActFunc function at each layer.
             Please select in `relu`, `leakyrelu`, `selu`, `sigmoid`, `tanh`,
             `identity`, by default "relu"\n
-        output_activation : ActivationName, optional
-            Activation function at output layer of decoder, by default "relu"\n
+        output_actfunc : ActFuncName, optional
+            ActFunc function at output layer of decoder, by default "relu"\n
         device : Device, optional
             Device to place encoder., by default "cpu"\n
         """
@@ -49,7 +49,7 @@ class Encoder(nn.Module):
                 input_channels, encoder_base_channels, 4, 2, 1, bias=False
             ),
             nn.BatchNorm2d(encoder_base_channels),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         # (B, ebc, 8, 8) -> (B, ebc * 2, 4, 4)
         self.l2 = nn.Sequential(
@@ -62,7 +62,7 @@ class Encoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(encoder_base_channels * 2),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         # (B, ebc * 2, 4, 4) -> (B, ebc * 4, 2, 2)
         self.l3 = nn.Sequential(
@@ -75,7 +75,7 @@ class Encoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(encoder_base_channels * 4),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         # (B, ebc * 4, 2, 2) -> (B, ld, 1, 1)
         # ld is latent_dimension
@@ -89,7 +89,7 @@ class Encoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(latent_dimensions),
-            add_activation(output_activation),
+            add_actfunc(output_actfunc),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -108,8 +108,8 @@ class Decoder(nn.Module):
         latent_dimensions: int = 10,
         decoder_base_channels: int = 64,
         input_channels: int = 1,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "tanh",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "tanh",
         device: Device = "cpu",
     ) -> None:
         """Decoder block of SimpleCAE16
@@ -124,12 +124,12 @@ class Decoder(nn.Module):
             by a factor of 2. , by default 64\n
         latent_dimensions : int, optional
             Number dimension of feature vector, by default 10\n
-        activation : ActivationName, optional
-            Activation function at each layer.
+        actfunc : ActFuncName, optional
+            ActFunc function at each layer.
             Please select in `relu`, `leakyrelu`, `selu`, `sigmoid`, `tanh`,
             `identity`, by default "relu"\n
-        output_activation : ActivationName, optional
-            Activation function at output layer of decoder, by default "relu"\n
+        output_actfunc : ActFuncName, optional
+            ActFunc function at output layer of decoder, by default "relu"\n
         device : Device, optional
             Device to place decoder., by default "cpu"\n
         """
@@ -147,7 +147,7 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(decoder_base_channels * 4),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         # (B, dbc * 4, 2, 2) -> (B, dbc * 2, 4, 4)
         self.l2 = nn.Sequential(
@@ -160,7 +160,7 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(decoder_base_channels * 2),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         # (B, dbc * 2, 4, 4) -> (B, dbc, 8, 8)
         self.l3 = nn.Sequential(
@@ -173,7 +173,7 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(decoder_base_channels),
-            add_activation(activation),
+            add_actfunc(actfunc),
         )
         # (B, dbc, 8, 8) -> (B, C, 16, 16)
         self.l4 = nn.Sequential(
@@ -186,7 +186,7 @@ class Decoder(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(input_channels),
-            add_activation(output_activation),
+            add_actfunc(output_actfunc),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -204,10 +204,10 @@ class SimpleCAE16(nn.Module):
         latent_dimensions: int,
         encoder_base_channels: int,
         decoder_base_channels: int,
-        encoder_activation: ActivationName = "relu",
-        decoder_activation: ActivationName = "relu",
-        encoder_output_activation: ActivationName = "selu",
-        decoder_output_activation: ActivationName = "sigmoid",
+        encoder_actfunc: ActFuncName = "relu",
+        decoder_actfunc: ActFuncName = "relu",
+        encoder_output_actfunc: ActFuncName = "selu",
+        decoder_output_actfunc: ActFuncName = "sigmoid",
         device: Device = "cpu",
     ) -> None:
         """Simply convolutional autoencoder for 16px x 16px images
@@ -226,15 +226,15 @@ class SimpleCAE16(nn.Module):
             Basic number of channels in the decoder block.
             With each layer, the number of channels in each layer decreases by
             a factor of 2. , by default 64\n
-        encoder_activation : ActivationName, optional
-            Activation function at the encoder block, by default "relu"\n
-        decoder_activation : ActivationName, optional
-            Activation function at the decoder block, by default "relu"\n
-        encoder_output_activation : ActivationName, optional
-            Activation function at output of the encoder block,
+        encoder_actfunc : ActFuncName, optional
+            ActFunc function at the encoder block, by default "relu"\n
+        decoder_actfunc : ActFuncName, optional
+            ActFunc function at the decoder block, by default "relu"\n
+        encoder_output_actfunc : ActFuncName, optional
+            ActFunc function at output of the encoder block,
             by default "selu"\n
-        decoder_output_activation : ActivationName, optional
-            Activation function at output of the decoder block,
+        decoder_output_actfunc : ActFuncName, optional
+            ActFunc function at output of the decoder block,
             by default "sigmoid"\n
         device : Device, optional
             Device to place decoder., by default "cpu"\n
@@ -245,16 +245,16 @@ class SimpleCAE16(nn.Module):
             input_channels,
             encoder_base_channels,
             latent_dimensions,
-            encoder_activation,
-            encoder_output_activation,
+            encoder_actfunc,
+            encoder_output_actfunc,
             device,
         )
         self.decoder: Callable[[Tensor], Tensor] = Decoder(
             latent_dimensions,
             decoder_base_channels,
             input_channels,
-            decoder_activation,
-            decoder_output_activation,
+            decoder_actfunc,
+            decoder_output_actfunc,
             device,
         )
 

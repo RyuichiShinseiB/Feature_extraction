@@ -4,7 +4,7 @@ from typing import Literal, Union
 # Third Party Library
 from torch import nn
 
-from ..mytyping import ActivationName, Tensor
+from ..mytyping import ActFuncName, Tensor
 
 
 def conv2d3x3(
@@ -86,8 +86,8 @@ def conv2d1x1(
         )
 
 
-def add_activation(
-    activation: ActivationName = "relu",
+def add_actfunc(
+    actfunc: ActFuncName = "relu",
 ) -> Union[
     nn.ReLU,
     nn.SELU,
@@ -99,13 +99,13 @@ def add_activation(
     nn.Softmax,
     nn.SiLU,
 ]:
-    """Add the specified activation function
+    """Add the specified actfunc function
 
     Parameters
     ----------
-    activation : str, optional
-        Name of the activation function you wish to specify, by default "relu"
-        Supported activation functions:
+    actfunc : str, optional
+        Name of the actfunc function you wish to specify, by default "relu"
+        Supported actfunc functions:
             ReLU: "relu"
             SELU: "selu"
             LeakyReLU: "leakyrelu"
@@ -116,68 +116,66 @@ def add_activation(
     Returns
     -------
     Union[nn.ReLU, nn.SELU, nn.LeakyReLU, nn.Sigmoid, nn.Tanh, nn.Identity]
-        Layer of the specified activation function
+        Layer of the specified actfunc function
 
     Raises
     ------
     RuntimeError
-        Caused when the function name does not match the supported activation
+        Caused when the function name does not match the supported actfunc
         function name.
     """
-    if activation == "relu":
+    if actfunc == "relu":
         return nn.ReLU(True)
-    elif activation == "selu":
+    elif actfunc == "selu":
         return nn.SELU(True)
-    elif activation == "leakyrelu":
+    elif actfunc == "leakyrelu":
         return nn.LeakyReLU(0.02, True)
-    elif activation == "sigmoid":
+    elif actfunc == "sigmoid":
         return nn.Sigmoid()
-    elif activation == "tanh":
+    elif actfunc == "tanh":
         return nn.Tanh()
-    elif activation == "identity":
+    elif actfunc == "identity":
         return nn.Identity()
-    elif activation == "softplus":
+    elif actfunc == "softplus":
         return nn.Softplus()
-    elif activation == "softmax":
+    elif actfunc == "softmax":
         return nn.Softmax(1)
-    elif activation == "silu":
+    elif actfunc == "silu":
         return nn.SiLU()
     else:
-        raise ValueError(
-            f'There is no activation function such as "{activation}"'
-        )
+        raise ValueError(f'There is no actfunc function such as "{actfunc}"')
 
 
 class DownShape(nn.Module):
     def __init__(
-        self, in_ch: int, out_ch: int, activation: ActivationName = "relu"
+        self, in_ch: int, out_ch: int, actfunc: ActFuncName = "relu"
     ) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(in_ch, out_ch, 4, 2, 1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_ch)
-        self.activation = add_activation(activation)
+        self.actfunc = add_actfunc(actfunc)
 
     def forward(self, x: Tensor) -> Tensor:
         h: Tensor = self.conv1(x)
         h = self.bn1(h)
-        h = self.activation(h)
+        h = self.actfunc(h)
 
         return h
 
 
 class UpShape(nn.Module):
     def __init__(
-        self, in_ch: int, out_ch: int, activation: ActivationName = "leakyrelu"
+        self, in_ch: int, out_ch: int, actfunc: ActFuncName = "leakyrelu"
     ) -> None:
         super().__init__()
         self.conv1 = nn.ConvTranspose2d(in_ch, out_ch, 4, 2, 1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_ch)
-        self.activation = add_activation(activation)
+        self.actfunc = add_actfunc(actfunc)
 
     def forward(self, x: Tensor) -> Tensor:
         h: Tensor = self.conv1(x)
         h = self.bn1(h)
-        h = self.activation(h)
+        h = self.actfunc(h)
 
         return h
 
@@ -187,12 +185,12 @@ class SELayer(nn.Module):
         self,
         in_ch: int,
         reduction: int = 16,
-        activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
     ) -> None:
         super().__init__()
         self.gap = nn.AdaptiveAvgPool2d((1, 1))
         self.fc1 = nn.Linear(in_ch, in_ch // reduction)
-        self.actfunc = add_activation(activation)
+        self.actfunc = add_actfunc(actfunc)
         self.fc2 = nn.Linear(in_ch // reduction, in_ch)
         self.sigmoid = nn.Sigmoid()
 
@@ -214,7 +212,7 @@ class MyBasicBlock(nn.Module):
         in_ch: int,
         out_ch: int,
         stride: int = 1,
-        activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
         how_sampling: Literal["down", "up"] = "down",
         *,
         expansion: int | None = None,
@@ -234,19 +232,19 @@ class MyBasicBlock(nn.Module):
             )
         else:
             self.shortcut = nn.Sequential()
-        self.activation = add_activation(activation)
+        self.actfunc = add_actfunc(actfunc)
 
     def forward(self, x: Tensor) -> Tensor:
         h: Tensor = self.conv1(x)
         h = self.bn1(h)
-        h = self.activation(h)
+        h = self.actfunc(h)
 
         h = self.conv2(h)
         h = self.bn2(h)
 
         h += self.shortcut(x)
 
-        h = self.activation(h)
+        h = self.actfunc(h)
         return h
 
 
@@ -258,7 +256,7 @@ class MyBottleneck(nn.Module):
         in_ch: int,
         out_ch: int,
         stride: int = 1,
-        activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
         how_sampling: Literal["down", "up"] = "down",
         *,
         expansion: int | None = None,
@@ -279,7 +277,7 @@ class MyBottleneck(nn.Module):
         self.conv3 = conv2d1x1(mid_ch, out_ch, how_sampling=how_sampling)
         self.bn3 = nn.BatchNorm2d(out_ch)
 
-        self.activation = add_activation(activation)
+        self.actfunc = add_actfunc(actfunc)
 
         if in_ch != out_ch:
             self.shortcut = nn.Sequential(
@@ -292,18 +290,18 @@ class MyBottleneck(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         h: Tensor = self.conv1(x)
         h = self.bn1(h)
-        h = self.activation(h)
+        h = self.actfunc(h)
 
         h = self.conv2(h)
         h = self.bn2(h)
-        h = self.activation(h)
+        h = self.actfunc(h)
 
         h = self.conv3(h)
         h = self.bn3(h)
 
         h += self.shortcut(x)
 
-        h = self.activation(h)
+        h = self.actfunc(h)
 
         return h
 
@@ -316,7 +314,7 @@ class SEBottleneck(nn.Module):
         in_ch: int,
         out_ch: int,
         stride: int = 1,
-        activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
         how_sampling: Literal["down", "up"] = "down",
         *,
         expansion: int = 4,
@@ -331,15 +329,15 @@ class SEBottleneck(nn.Module):
         self.residual = nn.Sequential(
             conv2d1x1(in_ch, mid_ch, how_sampling=how_sampling),
             nn.BatchNorm2d(mid_ch),
-            add_activation(activation),
+            add_actfunc(actfunc),
             conv2d3x3(mid_ch, mid_ch, stride, how_sampling),
             nn.BatchNorm2d(mid_ch),
-            add_activation(activation),
+            add_actfunc(actfunc),
             conv2d1x1(mid_ch, out_ch, how_sampling=how_sampling),
             nn.BatchNorm2d(out_ch),
         )
 
-        self.se_layer = SELayer(out_ch, reduction, activation)
+        self.se_layer = SELayer(out_ch, reduction, actfunc)
 
         if in_ch != out_ch:
             self.shortcut = nn.Sequential(
@@ -349,10 +347,10 @@ class SEBottleneck(nn.Module):
         else:
             self.shortcut = nn.Sequential()
 
-        self.activation = add_activation(activation)
+        self.actfunc = add_actfunc(actfunc)
 
     def forward(self, x: Tensor) -> Tensor:
         h: Tensor = self.residual(x)
         h = self.shortcut(x) + self.se_layer(h)
-        h = self.activation(h)
+        h = self.actfunc(h)
         return h

@@ -2,8 +2,8 @@ from collections.abc import Generator, Sequence
 
 from torch import nn
 
-from ..mytyping import ActivationName, Tensor
-from ._CNN_modules import add_activation
+from ..mytyping import ActFuncName, Tensor
+from ._CNN_modules import add_actfunc
 
 
 class MLP(nn.Module):
@@ -12,45 +12,49 @@ class MLP(nn.Module):
         input_dimension: int,
         middle_dimensions: Sequence[int],
         output_dimension: int,
-        activation: ActivationName,
-        output_activation: ActivationName | None,
-        dropout_rate: float = 0.3,
+        actfunc: ActFuncName,
+        output_actfunc: ActFuncName | None,
+        dropout_rate: float | None = None,
     ) -> None:
         super().__init__()
         self.input_dimension = input_dimension
         self.middle_dimensions = middle_dimensions
         self.output_dimension = output_dimension
-        self.actfunc_str = activation
-        self.dropout_rate = dropout_rate
+        self.actfunc_str = actfunc
+        self.dropout_rate = dropout_rate or 0.0
 
         self.layers = self._make_layers(
-            input_dimension, middle_dimensions, activation
+            input_dimension, middle_dimensions, actfunc
         )
         self.dropout = nn.Dropout(self.dropout_rate, inplace=True)
         self.final_layer = nn.Linear(middle_dimensions[-1], output_dimension)
-        self.activation = add_activation(activation)
-        if output_activation is None:
-            self.output_activation = (
+        self.actfunc = add_actfunc(actfunc)
+        if output_actfunc is None:
+            self.output_actfunc = (
                 nn.Sigmoid() if output_dimension == 1 else nn.Softmax(1)
             )
         else:
-            self.output_activation = add_activation(output_activation)
+            self.output_actfunc = add_actfunc(output_actfunc)
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.layers(x)
-        x = self.output_activation(self.final_layer(x))
+        x = self.output_actfunc(self.final_layer(x))
+        return x
+
+    def get_final_actfunc(self, x: Tensor) -> Tensor:
+        x = self.final_layer(self.layers(x))
         return x
 
     def _make_layers(
         self,
         input_dim: int,
         mid_dims: Sequence[int],
-        activation: ActivationName,
+        actfunc: ActFuncName,
     ) -> nn.Sequential:
         def _gen_each_layer() -> Generator[nn.Module, None, None]:
             for indim, outdim in inout_pairs:
                 yield nn.Linear(indim, outdim)
-                yield add_activation(activation)
+                yield add_actfunc(actfunc)
                 # yield nn.Dropout(self.dropout_rate)
 
         dims = [input_dim] + list(mid_dims)

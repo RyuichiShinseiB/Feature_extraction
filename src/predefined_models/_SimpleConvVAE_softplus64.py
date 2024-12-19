@@ -3,8 +3,8 @@ import torch
 from torch import nn
 
 # Local Library
-from ..mytyping import ActivationName, Device, Tensor
-from ._CNN_modules import DownShape, UpShape, add_activation
+from ..mytyping import ActFuncName, Device, Tensor
+from ._CNN_modules import DownShape, UpShape, add_actfunc
 
 
 class VariationalEncoder(nn.Module):
@@ -13,34 +13,34 @@ class VariationalEncoder(nn.Module):
         input_channels: int = 1,
         encoder_base_channels: int = 64,
         latent_dimensions: int = 10,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "relu",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "relu",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
         self.device = device
 
-        self.l1 = DownShape(input_channels, encoder_base_channels, activation)
+        self.l1 = DownShape(input_channels, encoder_base_channels, actfunc)
         self.l2 = DownShape(
-            encoder_base_channels, encoder_base_channels * 2, activation
+            encoder_base_channels, encoder_base_channels * 2, actfunc
         )
         self.l3 = DownShape(
-            encoder_base_channels * 2, encoder_base_channels * 4, activation
+            encoder_base_channels * 2, encoder_base_channels * 4, actfunc
         )
         self.l4 = DownShape(
-            encoder_base_channels * 4, encoder_base_channels * 8, activation
+            encoder_base_channels * 4, encoder_base_channels * 8, actfunc
         )
         self.l5 = DownShape(
-            encoder_base_channels * 8, encoder_base_channels * 16, activation
+            encoder_base_channels * 8, encoder_base_channels * 16, actfunc
         )
         self.l6 = DownShape(
-            encoder_base_channels * 16, encoder_base_channels * 32, activation
+            encoder_base_channels * 16, encoder_base_channels * 32, actfunc
         )
         self.l_mean = nn.Sequential(
             nn.Linear(
                 encoder_base_channels * 32, latent_dimensions, bias=False
             ),
-            add_activation(output_activation),
+            add_actfunc(output_actfunc),
         )
         self.l_var = nn.Sequential(
             nn.Linear(
@@ -70,30 +70,30 @@ class VariationalDecoder(nn.Module):
         latent_dimensions: int = 10,
         decoder_base_channels: int = 64,
         input_channels: int = 1,
-        activation: ActivationName = "relu",
-        output_activation: ActivationName = "sigmoid",
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "sigmoid",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
         self.device = device
 
         self.l1 = UpShape(
-            latent_dimensions, decoder_base_channels * 16, activation
+            latent_dimensions, decoder_base_channels * 16, actfunc
         )
         self.l2 = UpShape(
-            decoder_base_channels * 16, decoder_base_channels * 8, activation
+            decoder_base_channels * 16, decoder_base_channels * 8, actfunc
         )
         self.l3 = UpShape(
-            decoder_base_channels * 8, decoder_base_channels * 4, activation
+            decoder_base_channels * 8, decoder_base_channels * 4, actfunc
         )
         self.l4 = UpShape(
-            decoder_base_channels * 4, decoder_base_channels * 2, activation
+            decoder_base_channels * 4, decoder_base_channels * 2, actfunc
         )
         self.l5 = UpShape(
-            decoder_base_channels * 2, decoder_base_channels, activation
+            decoder_base_channels * 2, decoder_base_channels, actfunc
         )
         self.l6 = UpShape(
-            decoder_base_channels, input_channels, output_activation
+            decoder_base_channels, input_channels, output_actfunc
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -114,10 +114,10 @@ class SimpleCVAEsoftplus64(nn.Module):
         latent_dimensions: int = 10,
         encoder_base_channels: int = 64,
         decoder_base_channels: int = 64,
-        encoder_activation: ActivationName = "relu",
-        decoder_activation: ActivationName = "relu",
-        encoder_output_activation: ActivationName = "sigmoid",
-        decoder_output_activation: ActivationName = "tanh",
+        encoder_actfunc: ActFuncName = "relu",
+        decoder_actfunc: ActFuncName = "relu",
+        encoder_output_actfunc: ActFuncName = "sigmoid",
+        decoder_output_actfunc: ActFuncName = "tanh",
         device: Device = "cpu",
     ) -> None:
         super().__init__()
@@ -127,16 +127,16 @@ class SimpleCVAEsoftplus64(nn.Module):
             input_channels,
             encoder_base_channels,
             latent_dimensions,
-            encoder_activation,
-            encoder_output_activation,
+            encoder_actfunc,
+            encoder_output_actfunc,
             device,
         )
         self.decoder = VariationalDecoder(
             latent_dimensions,
             decoder_base_channels,
             input_channels,
-            decoder_activation,
-            decoder_output_activation,
+            decoder_actfunc,
+            decoder_output_actfunc,
             device,
         )
 

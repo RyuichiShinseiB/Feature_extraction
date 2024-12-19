@@ -217,6 +217,7 @@ def _train_model(
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
+    print("Show training configurations")
     display_cfg(_cfg)
     cfg = TrainClassificationModel.from_dictconfig(_cfg)
 
@@ -308,6 +309,7 @@ def main(_cfg: DictConfig) -> None:
 
     try:
         # Training start
+        print("Start training!!")
         _train_model(
             model,
             (train_dataloader, val_dataloader),

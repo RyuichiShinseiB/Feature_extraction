@@ -5,10 +5,10 @@ model:
     latent_dimensions: 128
     encoder_base_channels: 64
     decoder_base_channels: 64
-    encoder_activation: "selu"
-    decoder_activation: "selu"
-    encoder_output_activation: "selu"
-    decoder_output_activation: "sigmoid"
+    encoder_actfunc: "selu"
+    decoder_actfunc: "selu"
+    encoder_output_actfunc: "selu"
+    decoder_output_actfunc: "sigmoid"
 
 train:
   trained_save_path: SimpleCAE32/2023-07-10/12-37-46

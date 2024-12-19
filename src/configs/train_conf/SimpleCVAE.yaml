@@ -5,10 +5,10 @@ model:
     latent_dimensions: 32   # default: 128
     encoder_base_channels: 64
     decoder_base_channels: 64
-    encoder_activation: "selu"
-    decoder_activation: "selu"
-    encoder_output_activation: "tanh"
-    decoder_output_activation: "sigmoid"
+    encoder_actfunc: "selu"
+    decoder_actfunc: "selu"
+    encoder_output_actfunc: "tanh"
+    decoder_output_actfunc: "sigmoid"
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}

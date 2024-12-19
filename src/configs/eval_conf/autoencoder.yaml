@@ -6,10 +6,10 @@ model:
     latent_dimensions: 16
     encoder_base_channels: 64
     decoder_base_channels: 64
-    encoder_activation: relu
-    decoder_activation: relu
-    encoder_output_activation: relu
-    decoder_output_activation: sigmoid
+    encoder_actfunc: relu
+    decoder_actfunc: relu
+    encoder_output_actfunc: relu
+    decoder_output_actfunc: sigmoid
 train:
   # trained_save_path: SimpleCAE64/2023-01-31/12-54-00
   # trained_save_path: ${model.name}/2023-11-27/12-07-16
@@ -36,10 +36,10 @@ dataset:
 #     latent_dimensions: 10
 #     encoder_base_channels: 64
 #     decoder_base_channels: 64
-#     encoder_activation: selu
-#     decoder_activation: selu
-#     encoder_output_activation: selu
-#     decoder_output_activation: sigmoid
+#     encoder_actfunc: selu
+#     decoder_actfunc: selu
+#     encoder_output_actfunc: selu
+#     decoder_output_actfunc: sigmoid
 # train:
 #   trained_save_path: SimpleCVAE_softplus32/2023-07-18/11-43-58/
 #   train_hyperparameter:

@@ -13,7 +13,7 @@ model:
         - 3
       output_channels: 32
       block_name: basicblock
-      activation: relu
+      actfunc: relu
   latent_mean:
     network_type: MLP
     pretrained_path: null
@@ -22,8 +22,8 @@ model:
       middle_dimensions:
         - ${model.encoder.hyper_parameters.output_channels}
       output_dimension: ${model.encoder.hyper_parameters.output_channels}
-      activation: relu
-      output_activation: identity
+      actfunc: relu
+      output_actfunc: identity
   latent_var:
     network_type: MLP
     pretrained_path: null
@@ -32,8 +32,8 @@ model:
       middle_dimensions:
         - ${model.encoder.hyper_parameters.output_channels}
       output_dimension: ${model.encoder.hyper_parameters.output_channels}
-      activation: relu
-      output_activation: softplus
+      actfunc: relu
+      output_actfunc: softplus
   decoder:
     network_type: UpSamplingResNet
     pretrained_path: null
@@ -47,8 +47,8 @@ model:
         - 3
       output_channels: 1
       block_name: basicblock
-      activation: relu
-      output_activation: sigmoid
+      actfunc: relu
+      output_actfunc: sigmoid
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}

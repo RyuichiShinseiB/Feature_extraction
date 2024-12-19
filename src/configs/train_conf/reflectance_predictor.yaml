@@ -7,10 +7,10 @@ model:
       latent_dimensions: 128
       encoder_base_channels: 64
       decoder_base_channels: 64
-      encoder_activation: "selu"
-      decoder_activation: "selu"
-      encoder_output_activation: "selu"
-      decoder_output_activation: "sigmoid"
+      encoder_actfunc: "selu"
+      decoder_actfunc: "selu"
+      encoder_output_actfunc: "selu"
+      decoder_output_actfunc: "sigmoid"
 
   predictor_model:
     model: MLP
@@ -21,7 +21,7 @@ model:
         - 200
         - 400
         - 500
-      activation: leakyrelu
+      actfunc: leakyrelu
 
 train:
   train_hyperparameter:

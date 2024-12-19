@@ -17,8 +17,8 @@ model:
         - 3
       output_channels: 32
       block_name: bottleneck
-      activation: selu
-      output_activation: identity
+      actfunc: selu
+      output_actfunc: identity
   classifier:
     network_type: MLP
     pretrained_path: null
@@ -28,8 +28,8 @@ model:
         - 128
       output_dimension: 1
       dropout_rate: 0.0
-      activation: selu
-      output_activation: sigmoid
+      actfunc: selu
+      output_actfunc: sigmoid
 
 train:
   trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
@@ -45,7 +45,7 @@ train:
 
 dataset:
   image_target: CNTForest
-  path: ./data/processed/CNTForest/cnt_sem_64x64/10k
+  path: ./data/processed/CNTForest/cnt_sem_32x32/10k
   cls_conditions:
     0:
     - "3"

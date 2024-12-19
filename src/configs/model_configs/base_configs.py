@@ -13,7 +13,7 @@ from typing import (
 from omegaconf import DictConfig, OmegaConf
 
 from ...mytyping import (
-    ActivationName,
+    ActFuncName,
     ModelName,
     ResNetBlockName,
     TransformsNameValue,
@@ -110,8 +110,8 @@ class NetworkHyperParams(RecursiveDataclass):
     - input_dimension: int | None
     - middle_dimensions: Sequence[int] | None
     - output_dimension: int | None
-    - activation: ActivationName | Non
-    - output_activation: ActivationName | None = None
+    - actfunc: ActFuncName | Non
+    - output_actfunc: ActFuncName | None = None
 
     ## CNN hyper parameters
     - input_channels: int | None
@@ -122,17 +122,17 @@ class NetworkHyperParams(RecursiveDataclass):
     - latent_dimensions: int | Non
     - encoder_base_channels: int | None
     - decoder_base_channels: int | None
-    - encoder_activation: ActivationName | None
-    - decoder_activation: ActivationName | None
-    - encoder_output_activation: ActivationName | None
-    - decoder_output_activation: ActivationName | None
+    - encoder_actfunc: ActFuncName | None
+    - decoder_actfunc: ActFuncName | None
+    - encoder_output_actfunc: ActFuncName | None
+    - decoder_output_actfunc: ActFuncName | None
 
     ## ResNet hyper parameters
     - inplanes: int | None
     - block_name: ResNetBlockName | None
     - layers: tuple[int, int, int, int] | None
     - input_size: Sequence[int] | None
-    - input_resolusino: ActivationName | None
+    - input_resolusino: ActFuncName | None
 
 
     Raises
@@ -145,7 +145,7 @@ class NetworkHyperParams(RecursiveDataclass):
     input_dimension: int | None = None
     middle_dimensions: Sequence[int] | None = None
     output_dimension: int | None = None
-    activation: ActivationName | None = None
+    actfunc: ActFuncName | None = None
     dropout_rate: float | None = None
 
     # for cnn model
@@ -157,16 +157,16 @@ class NetworkHyperParams(RecursiveDataclass):
     latent_dimensions: int | None = None
     encoder_base_channels: int | None = None
     decoder_base_channels: int | None = None
-    encoder_activation: ActivationName | None = None
-    decoder_activation: ActivationName | None = None
-    encoder_output_activation: ActivationName | None = None
-    decoder_output_activation: ActivationName | None = None
+    encoder_actfunc: ActFuncName | None = None
+    decoder_actfunc: ActFuncName | None = None
+    encoder_output_actfunc: ActFuncName | None = None
+    decoder_output_actfunc: ActFuncName | None = None
 
     # for resnet
     inplanes: int | None = None
     block_name: ResNetBlockName | None = None
     layers: tuple[int, int, int, int] | None = None
-    output_activation: ActivationName | None = None
+    output_actfunc: ActFuncName | None = None
     input_resolution: int | None = None
 
     def __post_init__(self) -> None:

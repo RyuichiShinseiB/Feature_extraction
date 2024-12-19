@@ -4,7 +4,7 @@ hyper_parameters:
   latent_dimensions: 128
   encoder_base_channels: 64
   decoder_base_channels: 64
-  encoder_activation: "leakyrelu"
-  decoder_activation: "leakyrelu"
-  encoder_output_activation: "leakyrelu"
-  decoder_output_activation: "relu"
+  encoder_actfunc: "leakyrelu"
+  decoder_actfunc: "leakyrelu"
+  encoder_output_actfunc: "leakyrelu"
+  decoder_output_actfunc: "relu"

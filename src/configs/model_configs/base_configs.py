@@ -1,3 +1,4 @@
+import types
 from dataclasses import Field, asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
 from typing import (
@@ -7,6 +8,9 @@ from typing import (
     Type,
     TypeGuard,
     TypeVar,
+    Union,
+    get_args,
+    get_origin,
     get_type_hints,
 )
 
@@ -28,6 +32,38 @@ def _is_recursivedataclass(obj: type) -> TypeGuard["RecursiveDataclass"]:
     return is_dataclass(obj) and issubclass(obj, RecursiveDataclass)
 
 
+def _is_union_type(tp: type | types.UnionType) -> TypeGuard[types.UnionType]:
+    return get_origin(tp) in {types.UnionType, Union, None} and isinstance(
+        tp, (types.UnionType, type(None))
+    )
+
+
+def _is_including_recursive_dc(
+    obj: type | types.UnionType,
+) -> TypeGuard[type["RecursiveDataclass"] | type[Any]]:
+    if _is_union_type(obj):
+        for t in get_args(obj):
+            if _is_recursivedataclass(t):
+                return True
+        return False
+    else:
+        return _is_recursivedataclass(obj)  # type: ignore[arg-type]
+
+
+def _get_recursivedc_type(
+    target: type | types.UnionType,
+) -> type["RecursiveDataclass"]:
+    if _is_union_type(target):
+        for ut in get_args(target):
+            if issubclass(ut, RecursiveDataclass):
+                return ut  # type: ignore[no-any-return]
+    else:
+        if issubclass(target, RecursiveDataclass):  # type: ignore[arg-type]
+            return target  # type: ignore[return-value]
+
+    raise TypeError(f"Unexpected type was entered: {target}")
+
+
 @dataclass
 class RecursiveDataclass:
     pass
@@ -45,7 +81,8 @@ class RecursiveDataclass:
             ), f"Invalid Data Structure: {src_key} in {cls}"
             fld = field_dict[src_key]
             field_type = field_type_dict[fld.name]
-            if _is_recursivedataclass(field_type):
+            if _is_including_recursive_dc(field_type):
+                field_type = _get_recursivedc_type(field_type)
                 kwargs[src_key] = field_type.from_dict(src_value)
             else:
                 kwargs[src_key] = src_value
@@ -246,9 +283,7 @@ class _TwoStageModelConfig(RecursiveDataclass):
     encoder: NetworkConfig | None = None
     decoder: NetworkConfig | None = None
 
-    def __post_init__(
-        self,
-    ) -> None:
+    def __post_init__(self) -> None:
         first_layers_contents = self.feature or self.encoder
         second_layers_contents = self.classifier or self.decoder
 
@@ -256,10 +291,10 @@ class _TwoStageModelConfig(RecursiveDataclass):
             raise ValueError(
                 "A `feature` or `encoder` and a `classifier` or `decoder` "
                 "field is required.\n"
-                f"{self.feature=}"
-                f"{self.classifier=}"
-                f"{self.encoder=}"
-                f"{self.decoder=}"
+                f">> {self.feature=}\n"
+                f">> {self.classifier=}\n"
+                f">> {self.encoder=}\n"
+                f">> {self.decoder=}\n"
             )
 
     @property
@@ -287,7 +322,7 @@ class _TwoStageModelConfig(RecursiveDataclass):
 
 @dataclass
 class ExtractConfig(RecursiveDataclass):
-    model: _TwoStageModelConfig = _TwoStageModelConfig()
+    model: _TwoStageModelConfig = field(default_factory=_TwoStageModelConfig)
     train: TrainConfig = TrainConfig()
     dataset: ExtractDatasetConfig = ExtractDatasetConfig()
     feature_save_path: Path = field(default_factory=Path)

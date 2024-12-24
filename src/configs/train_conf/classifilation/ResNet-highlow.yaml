@@ -7,10 +7,6 @@ model:
       input_channels: 1
       inplanes: 64
       layers:
-        # - 2
-        # - 2
-        # - 2
-        # - 2
         - 3
         - 4
         - 6
@@ -27,7 +23,7 @@ model:
       middle_dimensions:
         - 128
       output_dimension: 1
-      dropout_rate: 0.0
+      dropout_rate: 0.5
       actfunc: selu
       output_actfunc: sigmoid
 

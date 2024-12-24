@@ -213,6 +213,7 @@ def _train_model(
 @hydra.main(
     version_base=None,
     config_path="../configs/train_conf/classifilation",
+    # config_name="ResNet-highlow_softmax",
     config_name="ResNet-highlow",
 )
 def main(_cfg: DictConfig) -> None:
@@ -330,7 +331,14 @@ def main(_cfg: DictConfig) -> None:
             model.state_dict(), model_save_path / "model_parameters.pth"
         )
 
-    print("Completed without any happening.")
+    if early_stopping is not None and early_stopping.early_stop:
+        max_step = cfg.train.train_hyperparameter.early_stopping
+        print(
+            f"Since it did not improve for {max_step} epochs, "
+            "it was terminated early."
+        )
+    else:
+        print("Completed without any happening.")
 
 
 if __name__ == "__main__":

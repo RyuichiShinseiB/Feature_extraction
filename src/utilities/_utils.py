@@ -493,8 +493,8 @@ class ForExtractFolder(BaseMyDataset):
             cls_conditions,
         )
 
-    def __getitem__(self, index: int) -> tuple[Tensor, int, str, str]:
-        path, target = self.samples[index]
+    def __getitem__(self, index: int) -> tuple[Tensor, int, int, str, str]:
+        path, base_target = self.samples[index]
 
         fname = path.split("/")[-1]
         dirname = path.split("/")[-2]
@@ -502,10 +502,12 @@ class ForExtractFolder(BaseMyDataset):
         sample = self.loader(path)
         if self.transform is not None:
             sample = self.transform(sample)
-        if self.target_transform is not None:
-            target = self.target_transform(target)
+        if self.target_transform is None:
+            target = base_target
+        else:
+            target = self.target_transform(base_target)
 
-        return sample, target, dirname, fname
+        return sample, target, base_target, dirname, fname
 
 
 class EarlyStopping:

@@ -236,3 +236,58 @@ class ExtractDatasetConfig(RecursiveDataclass):
             self.train_path = Path(self.train_path)
         if not isinstance(self.check_path, Path):
             self.check_path = Path(self.check_path)
+
+
+@dataclass
+class _TwoStageModelConfig(RecursiveDataclass):
+    name: str = ""
+    feature: NetworkConfig | None = None
+    classifier: NetworkConfig | None = None
+    encoder: NetworkConfig | None = None
+    decoder: NetworkConfig | None = None
+
+    def __post_init__(
+        self,
+    ) -> None:
+        first_layers_contents = self.feature or self.encoder
+        second_layers_contents = self.classifier or self.decoder
+
+        if first_layers_contents is None or second_layers_contents is None:
+            raise ValueError(
+                "A `feature` or `encoder` and a `classifier` or `decoder` "
+                "field is required.\n"
+                f"{self.feature=}"
+                f"{self.classifier=}"
+                f"{self.encoder=}"
+                f"{self.decoder=}"
+            )
+
+    @property
+    def first_stage(self) -> NetworkConfig:
+        first_stage_cfg = self.feature or self.encoder
+        if first_stage_cfg is None:
+            raise ValueError(
+                "A `feature` or `encoder` field is required.\n"
+                f"{self.feature=}"
+                f"{self.encoder=}"
+            )
+        return first_stage_cfg
+
+    @property
+    def seconde_stage(self) -> NetworkConfig:
+        second_stage_cfg = self.classifier or self.decoder
+        if second_stage_cfg is None:
+            raise ValueError(
+                "A `classifier` or `decoder` field is required.\n"
+                f"{self.classifier=}"
+                f"{self.decoder=}"
+            )
+        return second_stage_cfg
+
+
+@dataclass
+class ExtractConfig(RecursiveDataclass):
+    model: _TwoStageModelConfig = _TwoStageModelConfig()
+    train: TrainConfig = TrainConfig()
+    dataset: ExtractDatasetConfig = ExtractDatasetConfig()
+    feature_save_path: Path = field(default_factory=Path)

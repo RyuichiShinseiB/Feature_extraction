@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Literal
 
 from ....mytyping import (
-    ActivationName,
+    ActFuncName,
     ModelName,
     ResNetBlockName,
     TransformsNameValue,
@@ -23,10 +23,10 @@ class AutoencoderHyperParameter(RecursiveDataclass):
     latent_dimensions: int = 128
     encoder_base_channels: int = 64
     decoder_base_channels: int = 64
-    encoder_activation: ActivationName = "relu"
-    decoder_activation: ActivationName = "relu"
-    encoder_output_activation: ActivationName = "relu"
-    decoder_output_activation: ActivationName = "sigmoid"
+    encoder_activation: ActFuncName = "relu"
+    decoder_activation: ActFuncName = "relu"
+    encoder_output_activation: ActFuncName = "relu"
+    decoder_output_activation: ActFuncName = "sigmoid"
     # For ResNetVAE
     input_size: tuple[int, int] | None = None
     block_name: ResNetBlockName | None = None

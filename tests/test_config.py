@@ -1,10 +1,15 @@
 from pathlib import Path
 from typing import Any
 
+import pytest
 from hydra import compose, initialize
 
 from src.configs.model_configs import TrainClassificationModel
-from src.configs.model_configs.base_configs import TrainDatasetConfig
+from src.configs.model_configs.base_configs import (
+    NetworkConfig,
+    TrainDatasetConfig,
+    _TwoStageModelConfig,
+)
 from src.predefined_models import LoadModel
 
 
@@ -70,3 +75,63 @@ def test_datasetconfig_for_training() -> None:
     cfg = TrainDatasetConfig.from_dictconfig(_cfg.dataset)
 
     print(cfg)
+
+
+def test_two_stage_model_config() -> None:
+    _cfg = {
+        "name": "Test",
+        "encoder": {
+            "network_type": "MLP",
+            "pretrained_path": "./",
+            "hyper_parameters": {
+                "input_dimension": 100,
+                "middle_dimensions": [100, 50, 25],
+                "output_dimension": 100,
+            },
+        },
+        "classifier": {
+            "network_type": "MLP",
+            "pretrained_path": "./",
+            "hyper_parameters": {
+                "input_dimension": 100,
+                "middle_dimensions": [100, 50, 25],
+                "output_dimension": 100,
+            },
+        },
+    }
+    cfg = _TwoStageModelConfig.from_dict(_cfg)
+
+    assert isinstance(cfg.feature, NetworkConfig)
+    assert isinstance(cfg.classifier, NetworkConfig)
+    assert cfg.encoder is None
+    assert cfg.decoder is None
+    assert cfg.feature is cfg.first_stage
+    assert cfg.classifier is cfg.seconde_stage
+
+    print(cfg)
+
+
+def test_two_stage_model_config_raise_error() -> None:
+    _cfg = {
+        "name": "Test",
+        "decoder": {
+            "network_type": "MLP",
+            "pretrained_path": "./",
+            "hyper_parameters": {
+                "input_dimension": 100,
+                "middle_dimensions": [100, 50, 25],
+                "output_dimension": 100,
+            },
+        },
+        "classifier": {
+            "network_type": "MLP",
+            "pretrained_path": "./",
+            "hyper_parameters": {
+                "input_dimension": 100,
+                "middle_dimensions": [100, 50, 25],
+                "output_dimension": 100,
+            },
+        },
+    }
+    with pytest.raises(ValueError):
+        _TwoStageModelConfig.from_dict(_cfg)

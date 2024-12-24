@@ -8,18 +8,18 @@ import torch
 from omegaconf import DictConfig
 
 # First Party Library
-from src.configs.model_configs import ExtractConfig
+from src.configs.model_configs import v1
 from src.predefined_models import model_define
 from src.utilities import extract_features, get_dataloader
 
 
 @hydra.main(
     version_base=None,
-    config_path="../configs/predict_conf",
-    config_name="ResNetVAE",
+    config_path="../configs/eval_conf/classification",
+    config_name="ResNetVAE-highlow",
 )
 def main(_cfg: DictConfig) -> None:
-    cfg = ExtractConfig.from_dictconfig(_cfg)
+    cfg = v1.ExtractConfig.from_dictconfig(_cfg)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # 抽出した特徴量の保存先

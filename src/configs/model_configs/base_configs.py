@@ -243,13 +243,18 @@ class TrainHyperParameter(RecursiveDataclass):
 
 @dataclass
 class TrainConfig(RecursiveDataclass):
-    trained_save_path: str = "./models"
+    trained_save_path: Path = Path("./models")
     train_hyperparameter: TrainHyperParameter = TrainHyperParameter()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.trained_save_path, Path):
+            self.path = Path(self.trained_save_path)
 
 
 ########## Dataset configurations ###########
 @dataclass
 class TrainDatasetConfig(RecursiveDataclass):
+    image_size: int = 64
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
     path: Path = Path("../../data/processed/CNTForest/cnt_sem_64x64/10k")
     cls_conditions: dict[int, list[str]] | None = None
@@ -262,6 +267,7 @@ class TrainDatasetConfig(RecursiveDataclass):
 
 @dataclass
 class ExtractDatasetConfig(RecursiveDataclass):
+    image_size: int = 64
     image_target: Literal["CNTForest", "CNTPaint"] = "CNTForest"
     train_path: Path = Path("../../data/processed/CNTForest/cnt_sem_64x64/10k")
     check_path: Path = Path("../../data/processed/CNTForest/cnt_sem_64x64/10k")
@@ -309,7 +315,7 @@ class _TwoStageModelConfig(RecursiveDataclass):
         return first_stage_cfg
 
     @property
-    def seconde_stage(self) -> NetworkConfig:
+    def second_stage(self) -> NetworkConfig:
         second_stage_cfg = self.classifier or self.decoder
         if second_stage_cfg is None:
             raise ValueError(

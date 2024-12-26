@@ -40,8 +40,9 @@ train:
     early_stopping: 50
 
 dataset:
+  image_size: 64
   image_target: CNTForest
-  path: ./data/processed/CNTForest/cnt_sem_32x32/10k
+  path: ./data/processed/CNTForest/cnt_sem_${dataset.image_size}x${dataset.image_size}/10k
   cls_conditions:
     0:
     - "3"

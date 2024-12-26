@@ -1,7 +1,8 @@
 # Standard Library
+import itertools
 from collections.abc import Sequence
 from pathlib import Path
-from typing import overload
+from typing import Any, TypeVar, overload
 
 # Third Party Library
 import matplotlib
@@ -13,18 +14,96 @@ from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.typing import ColorType, MarkerType
 from PIL import Image
 
+__UNIT_PER_METER: dict[str, float] = {
+    "m": 1.0,
+    "mm": 1e-3,
+    "cm": 1e-2,
+    "inch": 1 / 0.0254,
+}
 
-def set_mpl_styles() -> None:
+NumArg = TypeVar("NumArg", float, list[float])
+
+
+def set_mpl_styles(*, fontsize: int = 15) -> None:
     plt.rcParams["font.family"] = "Times New Roman"
     plt.rcParams["mathtext.fontset"] = "stix"
-    plt.rcParams["font.size"] = 15
+    plt.rcParams["font.size"] = fontsize
     plt.rcParams["xtick.direction"] = "in"
     plt.rcParams["ytick.direction"] = "in"
     plt.rcParams["axes.grid"] = True
     plt.rcParams["axes.axisbelow"] = True
+    plt.rcParams["xtick.minor.visible"] = True
+    plt.rcParams["ytick.minor.visible"] = True
+
+
+def cvt_unit(v: NumArg, old: str = "cm", new: str = "inch") -> NumArg:
+    if isinstance(v, Sequence):
+        return [_v * __UNIT_PER_METER[new] * __UNIT_PER_METER[old] for _v in v]  # type: ignore[return-value]
+    return v * __UNIT_PER_METER[new] * __UNIT_PER_METER[old]
+
+
+def plot_cumulative_contribution_rate(
+    rates: Sequence[float],
+    ax: Axes | None = None,
+    cumulated: bool = False,
+    threshold: float = 0.7,
+    show_threshold: bool = False,
+) -> (
+    tuple[Figure, Axes, list[Line2D], float] | tuple[Axes, list[Line2D], float]
+):
+    fig: Figure | None = None
+    if ax is None:
+        fig = plt.figure(figsize=(6.4, 4.4), layout="constrained", dpi=300)
+        ax = fig.add_subplot()
+    if not cumulated:
+        rates = list(itertools.accumulate(rates))
+
+    num_comp = len(rates)
+    x = list(range(0, num_comp + 1))
+    y = [0] + list(rates)
+
+    lines = ax.plot(x, y, marker="o")
+
+    ax.set_xlabel("Number of principal components")
+    ax.set_ylabel("Cumulative contribution rate")
+    ax.set_yticks(np.arange(0.0, 1.1, 0.1))
+
+    ax.set_xlim(0, num_comp + 1)
+    ax.set_ylim(bottom=0)
+
+    max_index_thresh = np.argmin([rate - threshold for rate in rates]).astype(
+        int
+    )
+    num_use_features = max_index_thresh + 1
+    if show_threshold:
+        _, xaxis_right = ax.get_xlim()
+        ax.hlines(
+            threshold, 0, xaxis_right, linestyles="--", colors="red", alpha=0.5
+        )
+        ax.vlines(
+            num_use_features,
+            0,
+            rates[num_use_features - 1],
+            colors="red",
+        )
+        ax.text(
+            x=num_use_features,
+            y=-0.02,
+            s=f"{num_use_features}",
+            color="red",
+            horizontalalignment="center",
+            verticalalignment="top",
+            fontsize=12,
+        )
+
+    if fig is None:
+        return ax, lines, num_use_features
+    else:
+        return fig, ax, lines, num_use_features
 
 
 def scatter_each_classes(
@@ -225,7 +304,8 @@ def plot_scatter(
     size: float = 20,
     color: ColorType = "tab:blue",
     marker: MarkerType = "o",
-    zorder: float = 0,
+    ploting_axes: tuple[int, int] = (0, 1),
+    # zorder: float = 0,
     scatter_label: str | None = None,
     axis_labels: tuple[str, str] | None = None,
 ) -> tuple[Figure, Axes, PathCollection]:
@@ -240,7 +320,8 @@ def plot_scatter(
     size: float = 20,
     color: ColorType = "tab:blue",
     marker: MarkerType = "o",
-    zorder: float = 0,
+    ploting_axes: tuple[int, int] = (0, 1),
+    # zorder: float = 0,
     scatter_label: str | None = None,
     axis_labels: tuple[str, str] | None = None,
 ) -> tuple[Axes, PathCollection]:
@@ -254,8 +335,9 @@ def plot_scatter(
     size: float = 20,
     color: ColorType = "tab:blue",
     marker: MarkerType = "o",
-    zorder: float = 0,
-    scatter_label: str | None = None,
+    ploting_axes: tuple[int, int] = (0, 1),
+    # zorder: float = 0,
+    scatter_label: str | int | Any | None = None,
     axis_labels: tuple[str, str] | None = None,
 ) -> tuple[Axes, PathCollection] | tuple[Figure, Axes, PathCollection]:
     fig = None
@@ -263,14 +345,14 @@ def plot_scatter(
         fig = plt.figure(layout="constrained")
         ax = fig.add_subplot()
     pc = ax.scatter(
-        data[0],
-        data[1],
+        data[ploting_axes[0]],
+        data[ploting_axes[1]],
         s=size,
         marker=marker,
-        facecolor="None",
-        edgecolors=color,
+        c=color,
         label=scatter_label,
-        zorder=zorder,
+        # zorder=zorder,
+        alpha=0.5,
     )
     x_range = ax.get_xlim()
     y_range = ax.get_ylim()

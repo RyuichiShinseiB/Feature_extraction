@@ -494,6 +494,27 @@ class ForExtractFolder(BaseMyDataset):
         )
 
     def __getitem__(self, index: int) -> tuple[Tensor, int, int, str, str]:
+        """Get data from dataset
+
+        Parameters
+        ----------
+        index : int
+            index
+
+        Returns
+        -------
+        sample: Tensor
+            Tensor data of image
+        target: int
+            Target data of `sample`.
+        base_target: int
+            `target` before `target_transform`.
+        dirname: str
+            Name of the directory containing the `sample` data. Target name
+            in most cases.
+        fname: str
+            The file name of the `sample`.
+        """
         path, base_target = self.samples[index]
 
         fname = path.split("/")[-1]

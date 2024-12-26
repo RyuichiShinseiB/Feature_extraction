@@ -22,18 +22,18 @@ model:
       input_dimension: ${model.feature.hyper_parameters.output_channels}
       middle_dimensions:
         - 128
-      output_dimension: 1
-      dropout_rate: 0.3
+      output_dimension: 2
+      dropout_rate: 0.0
       actfunc: selu
-      output_actfunc: sigmoid
+      output_actfunc: softmax
 
 train:
-  trained_save_path: ${model.name}/2024-12-20/11-18-00
+  trained_save_path: ${model.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   train_hyperparameter:
     lr: 1.0e-4
     epochs: 10000
     batch_size: 64
-    reconst_loss: bce
+    reconst_loss: ce
     latent_loss: null
     weight_decay: 1.0e-4
     num_save_reconst_image: 1000
@@ -60,4 +60,4 @@ feature_save_path: ${train.trained_save_path}
 
 hydra:
   run:
-    dir: ./reports/features/${train.trained_save_path}
+    dir: ./models/${train.trained_save_path}

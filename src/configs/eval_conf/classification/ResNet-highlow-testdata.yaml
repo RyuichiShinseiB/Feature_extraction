@@ -45,14 +45,14 @@ dataset:
   train_path: data/processed/CNTForest/cnt_sem_${dataset.image_size}x${dataset.image_size}/10k
   check_path: data/processed/check/CNTForest/cnt_sem_for_check_${dataset.image_size}x${dataset.image_size}/10k
   cls_conditions:
-    # 0:
-    # - "3"
-    # - "5"
-    # - "7"
-    # 1:
-    # - "4"
-    # - "6"
-    # - "8"
+    0:
+    - "3"
+    - "5"
+    - "7"
+    1:
+    - "4"
+    - "6"
+    - "8"
     -1:
     - "0"
     - "1"

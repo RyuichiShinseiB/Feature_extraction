@@ -14,7 +14,6 @@ from typing import (
 )
 
 # Third Party Library
-import hydra
 import numpy as np
 import torch
 import torch.onnx as onnx
@@ -40,7 +39,8 @@ from ..mytyping import (
     TransformsName,
     TransformsNameValue,
 )
-from ..predefined_models import model_define
+
+# from ..predefined_models import model_define
 
 IMG_EXTENSIONS = (
     ".jpg",
@@ -271,21 +271,6 @@ def save_onnx(
         path,
         export_params=True,
     )
-
-
-def load_model(model_saved_dir: Path) -> Model:
-    config_dir = model_saved_dir / ".hydra"
-    with hydra.initialize(version_base=None, config_path=str(config_dir)):
-        cfg = hydra.compose("config")
-    print("Configurations obtained during training.")
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model_save_path = model_saved_dir / "model_parameters.pth"
-
-    model = model_define(cfg.model, device=device)
-    print("Loading model parameters")
-    model.load_state_dict(torch.load(model_save_path))
-    return model
 
 
 def extract_features(

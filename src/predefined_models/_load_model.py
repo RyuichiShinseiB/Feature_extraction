@@ -1,14 +1,20 @@
+from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import torch
+from omegaconf import DictConfig, OmegaConf
 
+from ..configs.model_configs.autoencoder_configs.v1 import (
+    AutoencoderModelConfig,
+    MAEViTModelConfig,
+)
 from ..configs.model_configs.base_configs import (
     NetworkConfig,
-    RecursiveDataclass,
+    NetworkHyperParams,
 )
-from ..mytyping import Model, ModelName
+from ..mytyping import Device, Model, ModelName
 from ..utilities import find_project_root
 from ._MLP import MLP
 from ._ResNetVAE import DownSamplingResNet, ResNetVAE, UpSamplingResNet
@@ -46,10 +52,10 @@ class LoadModel(Enum):
     def load_model(
         cls,
         model_name: ModelName,
-        model_cfg: dict[str, Any] | RecursiveDataclass,
+        model_cfg: dict[str, Any] | NetworkHyperParams,
         pretrained_params_path: str | Path | None = None,
     ) -> Model:
-        if isinstance(model_cfg, RecursiveDataclass):
+        if isinstance(model_cfg, NetworkHyperParams):
             model_cfg = model_cfg.to_dict()
 
         try:
@@ -70,4 +76,57 @@ class LoadModel(Enum):
     def load_model_from_config(cls, cfg: NetworkConfig) -> Model:
         return cls.load_model(
             cfg.network_type, cfg.hyper_parameters, cfg.pretrained_path
+        )
+
+
+def set_hyper_parameters(
+    model_cfg: AutoencoderModelConfig | MAEViTModelConfig,
+) -> dict[str, int | str] | Any:
+    if isinstance(model_cfg, AutoencoderModelConfig | MAEViTModelConfig):
+        return asdict(
+            model_cfg.hyper_parameters,
+            dict_factory=lambda x: {k: v for (k, v) in x if v is not None},
+        )
+    elif isinstance(model_cfg, DictConfig):
+        return OmegaConf.to_container(model_cfg.hyper_parameters)
+    else:
+        raise ValueError(
+            "model_cfg is not AutoencoderModelConfig, MAEViTModelConfig or DictConfig"  # noqa: E501
+        )
+
+
+def model_define(  # noqa: C901
+    model_cfg: AutoencoderModelConfig | MAEViTModelConfig,
+    device: Device = "cpu",
+) -> Model:
+    model_name: ModelName = model_cfg.name
+    hyper_parameters = set_hyper_parameters(model_cfg)
+
+    if model_name == "SECAE32":
+        return SECAE32(**hyper_parameters, device=device)
+    elif model_name == "SECAE64":
+        return SECAE64(**hyper_parameters, device=device)
+    elif model_name == "SECVAE64":
+        return SECVAE64(**hyper_parameters, device=device)
+    elif model_name == "SECVAEsoftplus64":
+        return SECVAEsoftplus64(**hyper_parameters, device=device)
+    elif model_name == "SimpleCAE16":
+        return SimpleCAE16(**hyper_parameters, device=device)
+    elif model_name == "SimpleCAE32":
+        return SimpleCAE32(**hyper_parameters, device=device)
+    elif model_name == "SimpleCAE64":
+        return SimpleCAE64(**hyper_parameters, device=device)
+    elif model_name == "SimpleCAE128":
+        return SimpleCAE128(**hyper_parameters, device=device)
+    elif model_name == "SimpleCVAE64":
+        return SimpleCVAE64(**hyper_parameters, device=device)
+    elif model_name == "SimpleCVAE_softplus32":
+        return SimpleCVAEsoftplus32(**hyper_parameters, device=device)
+    elif model_name == "SimpleCVAE_softplus64":
+        return SimpleCVAEsoftplus64(**hyper_parameters, device=device)
+    elif model_name == "ResNetVAE":
+        return ResNetVAE(**hyper_parameters, device=device)
+    else:
+        raise NotImplementedError(
+            f'There is no defined model such as "{model_name}"'
         )

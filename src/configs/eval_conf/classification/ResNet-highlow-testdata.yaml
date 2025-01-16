@@ -1,0 +1,67 @@
+model:
+  name: ClassifierReflectance
+  feature:
+    network_type: DownSamplingResNet
+    pretrained_path: null
+    hyper_parameters:
+      input_channels: 1
+      inplanes: 64
+      layers:
+        - 3
+        - 4
+        - 6
+        - 3
+      output_channels: 32
+      block_name: bottleneck
+      actfunc: selu
+      output_actfunc: identity
+  classifier:
+    network_type: MLP
+    pretrained_path: null
+    hyper_parameters:
+      input_dimension: ${model.feature.hyper_parameters.output_channels}
+      middle_dimensions:
+        - 128
+      output_dimension: 1
+      dropout_rate: 0.3
+      actfunc: selu
+      output_actfunc: sigmoid
+
+train:
+  trained_save_path: ${model.name}/2024-12-20/11-18-00
+  train_hyperparameter:
+    lr: 1.0e-4
+    epochs: 10000
+    batch_size: 64
+    reconst_loss: bce
+    latent_loss: null
+    weight_decay: 1.0e-4
+    num_save_reconst_image: 1000
+    early_stopping: 50
+
+dataset:
+  image_size: 32
+  image_target: CNTForest
+  train_path: data/processed/CNTForest/cnt_sem_${dataset.image_size}x${dataset.image_size}/10k
+  check_path: data/processed/check/CNTForest/cnt_sem_for_check_${dataset.image_size}x${dataset.image_size}/10k
+  cls_conditions:
+    # 0:
+    # - "3"
+    # - "5"
+    # - "7"
+    # 1:
+    # - "4"
+    # - "6"
+    # - "8"
+    -1:
+    - "0"
+    - "1"
+    - "2"
+  transform:
+    Grayscale: 1
+    ToTensor: 0
+feature_save_path: ${train.trained_save_path}
+
+hydra:
+  run:
+    dir: ./reports/features/${train.trained_save_path}

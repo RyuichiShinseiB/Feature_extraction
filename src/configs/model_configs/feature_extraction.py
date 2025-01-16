@@ -25,7 +25,9 @@ class ExtractConfig(RecursiveDataclass):
     dataset: ExtractDatasetConfig = ExtractDatasetConfig()
     feature_save_path: Path = field(default_factory=Path)
 
-    def create_datasets(self, seed: int = 42) -> tuple[DataLoader, DataLoader]:
+    def create_dataloader(
+        self, seed: int = 42
+    ) -> tuple[DataLoader, DataLoader]:
         root = find_project_root()
         train_dataloader = get_dataloader(
             dataset_path=root / self.dataset.train_path,

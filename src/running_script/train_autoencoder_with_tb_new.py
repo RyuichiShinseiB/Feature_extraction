@@ -12,11 +12,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.configs.model_configs import TrainVAEConfig
 from src.loss_function import LossFunction
-from src.predefined_models._build_VAE import VAEFrame
 from src.utilities import (
     EarlyStopping,
     display_cfg,
-    get_dataloader,
     weight_init,
 )
 
@@ -75,10 +73,7 @@ def main(_cfg: DictConfig) -> None:
 
     # 再構成画像を保存する間隔
     # Storage interval of reconstructed images
-    save_interval = (
-        cfg.train.train_hyperparameter.epochs
-        // cfg.train.train_hyperparameter.num_save_reconst_image
-    )
+    save_interval = cfg.verbose_interval
 
     # GPUが使える環境であればCPUでなくGPUを使うようにする設定
     # Use GPU instead of CPU if GPU is available
@@ -86,7 +81,7 @@ def main(_cfg: DictConfig) -> None:
 
     # モデルの選択とハイパラの設定
     # Model selection and hyperparameter configuration from configs.yaml
-    model = VAEFrame.build_from_config(cfg.model).to(device)
+    model = cfg.create_vae_model(device)
 
     # 重みの初期化
     # Weight initialization
@@ -107,14 +102,15 @@ def main(_cfg: DictConfig) -> None:
     # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、  # noqa: E501
     # 訓練用と検証用のデータローダーを作製する。
     # generator_seedは、データセットを分割するときのseed値
-    train_dataloader, val_dataloader = get_dataloader(
-        cfg.dataset.path,
-        cfg.dataset.transform,
-        split_ratio=(0.8, 0.2),
-        batch_size=cfg.train.train_hyperparameter.batch_size,
-        shuffle=True,
-        generator_seed=42,
-    )
+    train_dataloader, val_dataloader = cfg.create_dataloader((0.8, 0.2))
+    # train_dataloader, val_dataloader = get_dataloader(
+    #     cfg.dataset.path,
+    #     cfg.dataset.transform,
+    #     split_ratio=(0.8, 0.2),
+    #     batch_size=cfg.train.train_hyperparameter.batch_size,
+    #     shuffle=True,
+    #     generator_seed=42,
+    # )
 
     # length_of_dataloader = len(train_dataloader)
     # latent_interval = length_of_dataloader // 10

@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.configs.model_configs import TrainAutoencoderConfig
 from src.loss_function import LossFunction
-from src.predefined_models import model_define
+from src.predefined_models._load_model import model_define
 from src.utilities import (
     EarlyStopping,
     display_cfg,

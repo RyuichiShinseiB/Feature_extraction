@@ -15,7 +15,7 @@ from src.loss_function import LossFunction, calc_loss
 
 # First Party Library
 from src.mytyping import Tensor
-from src.predefined_models import model_define
+from src.predefined_models._load_model import model_define
 from src.utilities import (
     EarlyStopping,
     display_cfg,

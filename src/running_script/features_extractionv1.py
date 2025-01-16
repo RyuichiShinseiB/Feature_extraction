@@ -9,7 +9,7 @@ from omegaconf import DictConfig
 
 # First Party Library
 from src.configs.model_configs import v1
-from src.predefined_models import model_define
+from src.predefined_models._load_model import model_define
 from src.utilities import extract_features, get_dataloader
 
 

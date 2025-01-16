@@ -15,7 +15,7 @@ from torcheval.metrics.functional import binary_accuracy, multiclass_accuracy
 from src.configs.model_configs import TrainClassificationModel
 from src.loss_function import LossFunction
 from src.mytyping import Device
-from src.predefined_models import LoadModel
+from src.predefined_models._load_model import LoadModel
 from src.utilities import (
     EarlyStopping,
     display_cfg,

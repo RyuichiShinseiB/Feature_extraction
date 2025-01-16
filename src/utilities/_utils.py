@@ -143,12 +143,14 @@ def get_dataloader(
         Path to dataset
     dataset_transform : TransformsNameValue
         dictionary type parameters. {"transform": parameter}
+    split_ratio : tuple[float, float] | None, optional
+        Split training and validation if not None, by default None
     batch_size : int, optional
         Unit of data used per study, by default 64
     shuffle : bool
         The dataloader is shuffled if True, by default True
-    split_ratio : tuple[float, float] | None, optional
-        Split training and validation if not None, by default None
+    extraction : bool
+        Whether to use for extraction, False by default, by default False
     cls_conditions: dict[int, list[str]] | None, optional
         Works as a substitute for `target_transform`. The key is the new class and the value is the list of source classes corresponding to that class.
 

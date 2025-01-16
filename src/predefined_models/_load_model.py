@@ -9,6 +9,7 @@ from ..configs.model_configs.base_configs import (
     RecursiveDataclass,
 )
 from ..mytyping import Model, ModelName
+from ..utilities import find_project_root
 from ._MLP import MLP
 from ._ResNetVAE import DownSamplingResNet, ResNetVAE, UpSamplingResNet
 from ._SECAE32 import SECAE32
@@ -56,9 +57,11 @@ class LoadModel(Enum):
         except KeyError as e:
             raise KeyError(f"Unmatched arguments entered: {e}") from e
         if pretrained_params_path is not None:
+            print("loading parameter to model")
+            root = find_project_root()
             model.load_state_dict(
                 torch.load(
-                    pretrained_params_path,
+                    root / "models" / pretrained_params_path,
                 )
             )
         return model

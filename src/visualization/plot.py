@@ -12,9 +12,12 @@ import numpy as np
 import polars as pl
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
+from matplotlib.colors import Colormap
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+from matplotlib.ticker import MultipleLocator
 from matplotlib.typing import ColorType, MarkerType
 from PIL import Image
 
@@ -25,7 +28,9 @@ __UNIT_PER_METER: dict[str, float] = {
     "inch": 1 / 0.0254,
 }
 
-NumArg = TypeVar("NumArg", float, list[float])
+NumArgCo = TypeVar(
+    "NumArgCo", float, list[float], tuple[float, ...], covariant=True
+)
 
 
 def set_mpl_styles(*, fontsize: int = 15) -> None:
@@ -40,9 +45,13 @@ def set_mpl_styles(*, fontsize: int = 15) -> None:
     plt.rcParams["ytick.minor.visible"] = True
 
 
-def cvt_unit(v: NumArg, old: str = "cm", new: str = "inch") -> NumArg:
-    if isinstance(v, Sequence):
-        return [_v * __UNIT_PER_METER[new] * __UNIT_PER_METER[old] for _v in v]  # type: ignore[return-value]
+def cvt_unit(v: NumArgCo, old: str = "cm", new: str = "inch") -> NumArgCo:
+    if isinstance(v, list):
+        return [_v * __UNIT_PER_METER[new] * __UNIT_PER_METER[old] for _v in v]
+    elif isinstance(v, tuple):
+        return tuple(
+            _v * __UNIT_PER_METER[new] * __UNIT_PER_METER[old] for _v in v
+        )
     return v * __UNIT_PER_METER[new] * __UNIT_PER_METER[old]
 
 
@@ -302,7 +311,7 @@ def plot_scatter(
     data: Sequence[np.ndarray] | np.ndarray,
     *,
     size: float = 20,
-    color: ColorType = "tab:blue",
+    color: ColorType | list[ColorType] = "tab:blue",
     marker: MarkerType = "o",
     ploting_axes: tuple[int, int] = (0, 1),
     # zorder: float = 0,
@@ -318,7 +327,7 @@ def plot_scatter(
     ax: Axes | None = None,
     *,
     size: float = 20,
-    color: ColorType = "tab:blue",
+    color: ColorType | list[ColorType] = "tab:blue",
     marker: MarkerType = "o",
     ploting_axes: tuple[int, int] = (0, 1),
     # zorder: float = 0,
@@ -333,7 +342,7 @@ def plot_scatter(
     ax: Axes | None = None,
     *,
     size: float = 20,
-    color: ColorType = "tab:blue",
+    color: ColorType | list[ColorType] = "tab:blue",
     marker: MarkerType = "o",
     ploting_axes: tuple[int, int] = (0, 1),
     # zorder: float = 0,
@@ -437,6 +446,129 @@ def plot_bar(
         return fig, ax, bar_cont
 
 
-if __name__ == "__main__":
-    r = np.random.randn(5, 2)
-    a = plot_bar(r)
+def _align_xy_ticks_interval(ax: Axes) -> None:
+    """Align the scale interval of the x-axis and y-axis to the larger one.
+
+    Parameters
+    ----------
+    ax : Axes
+        A target `Axes` instance
+
+    Examples
+    ---------
+    >>> x = np.arange(0, 2 * np.pi, 0.01)
+    >>> y = np.sin(x)
+    >>> fig = plt.figure()
+    >>> ax = fig.add_subplot()
+    >>> ax.plot(x, y)
+    >>> print(ax.get_xticks())
+    [-1.  0.  1.  2.  3.  4.  5.  6.  7.]
+    >>> print(ax.get_yticks())
+    [-1.25 -1.   -0.75 -0.5  -0.25  0.    0.25  0.5   0.75  1.    1.25]
+    >>> _align_xy_ticks_interval(ax)
+    >>> print(ax.get_xticks())
+    [-1.  0.  1.  2.  3.  4.  5.  6.  7.]
+    >>> print(ax.get_yticks())
+    [-2. -1.  0.  1.  2.]
+
+    """
+    xticks = ax.get_xticks()
+    xinterval = xticks[1] - xticks[0]
+    yticks = ax.get_yticks()
+    yinterval = yticks[1] - yticks[0]
+    interval = xinterval if xinterval > yinterval else yinterval
+
+    ax.xaxis.set_major_locator(MultipleLocator(interval))
+    ax.yaxis.set_major_locator(MultipleLocator(interval))
+
+
+def plot_scatter_reflclsf_features(
+    data: np.ndarray,
+    metadata_df: pl.DataFrame,
+    figsize_cm: tuple[float, float] = (14, 8),
+    plotting_dims: tuple[int, int] = (0, 1),
+    cmap: Colormap | None = None,
+    markers: Sequence[MarkerType] | None = None,
+    is_pca_data: bool = True,
+    is_rescaled_data: bool = False,
+) -> Figure:
+    targets = metadata_df.select("target").unique()[:, 0]
+    if is_pca_data and is_rescaled_data:
+        label_prefix = "Rescaled PC"
+    elif is_pca_data:
+        label_prefix = "PC"
+    elif is_rescaled_data:
+        label_prefix = "Rescaled component "
+    else:
+        label_prefix = "Component "
+    axis_labels = tuple(
+        label_prefix + str(i + 1)
+        for i in range(data.shape[1])
+        if i in plotting_dims
+    )
+    target_label = {0: "Low", 1: "High"}
+
+    figsize = cvt_unit(figsize_cm, old="cm", new="inch")
+    fig = plt.figure(figsize=figsize, layout="constrained", dpi=100)  # type: ignore[arg-type]
+    ax = fig.add_subplot()
+
+    ax.set_xlabel(axis_labels[0])
+    ax.set_ylabel(axis_labels[1])
+    ax.set_aspect("equal")
+    ax.set_axisbelow(True)
+    if cmap is None:
+        cmap = plt.get_cmap("tab10")
+    if markers is None:
+        markers = ["v", "^", "d", "v"]
+
+    for t in targets:
+        target_df = metadata_df.filter(pl.col("target") == t)
+        dirnames = target_df.select("dirname").to_numpy().flatten()
+        colors = [cmap(d) for d in dirnames]
+        idxes = target_df.select("id").to_numpy().flatten().tolist()
+        plot_scatter(
+            data[idxes].T,
+            ax,
+            color=colors,
+            marker=markers[t],
+            ploting_axes=plotting_dims,
+            scatter_label=t,
+        )
+
+    # legend
+    sample_legend_elems = [
+        Patch(color=cmap(d), label=d, alpha=0.5)
+        for d in metadata_df.select("dirname").unique()[:, 0]
+    ]
+    target_legend_elms = [
+        Line2D(
+            [0],
+            [0],
+            marker=markers[t],
+            linestyle="",
+            markeredgecolor="black",
+            markerfacecolor="none",
+            label=target_label[t],
+        )
+        for t in targets
+    ]
+
+    target_legend = ax.legend(
+        handles=target_legend_elms,
+        title="Reflectance",
+        loc="lower left",
+        bbox_to_anchor=(1.04, 0.0),
+    )
+    sample_id_legend = ax.legend(  # noqa: F841
+        handles=sample_legend_elems,
+        title="Sample Number",
+        loc="upper left",
+        bbox_to_anchor=(1, 1),
+    )
+    # 複数回`ax.legend()`をしても、最後に追加した凡例しか表示されない
+    # ここで最初に追加した凡例を明示的に表示する
+    ax.add_artist(target_legend)
+
+    _align_xy_ticks_interval(ax)
+
+    return fig

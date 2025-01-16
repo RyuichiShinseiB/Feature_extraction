@@ -324,11 +324,3 @@ class _TwoStageModelConfig(RecursiveDataclass):
                 f"{self.decoder=}"
             )
         return second_stage_cfg
-
-
-@dataclass
-class ExtractConfig(RecursiveDataclass):
-    model: _TwoStageModelConfig = field(default_factory=_TwoStageModelConfig)
-    train: TrainConfig = TrainConfig()
-    dataset: ExtractDatasetConfig = ExtractDatasetConfig()
-    feature_save_path: Path = field(default_factory=Path)

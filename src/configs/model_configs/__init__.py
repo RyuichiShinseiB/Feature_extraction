@@ -10,8 +10,8 @@ from .autoencoder_configs import (
     v2,
 )
 from .base_configs import (
-    ExtractConfig,
     dict2dataclass,
     dictconfig2dataclass,
 )
-from .classification_configs import TrainClassificationModel
+from .classification import TrainClassificationModel
+from .feature_extraction import ExtractConfig

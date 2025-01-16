@@ -64,7 +64,7 @@ class LoadModel(Enum):
         return model
 
     @classmethod
-    def from_config(cls, cfg: NetworkConfig) -> Model:
+    def load_model_from_config(cls, cfg: NetworkConfig) -> Model:
         return cls.load_model(
             cfg.network_type, cfg.hyper_parameters, cfg.pretrained_path
         )

@@ -3,7 +3,7 @@ import torch
 from omegaconf import DictConfig
 
 from src.configs.model_configs import TrainAutoencoderConfig
-from src.predefined_models import model_define
+from src.predefined_models._load_model import model_define
 from src.predefined_models._ResNetVAE import (
     DownSamplingResNet,
     UpSamplingResNet,
@@ -24,7 +24,7 @@ def test_downsample_mybasicblock() -> None:
         layers=(3, 4, 6, 3),
         input_channels=3,
         output_channels=100,
-        activation="relu",
+        actfunc="relu",
         resolution=resolution,
     ).to(device)
 
@@ -43,7 +43,7 @@ def test_downsample_mybottleneck() -> None:
         layers=(3, 4, 6, 3),
         input_channels=3,
         output_channels=100,
-        activation="relu",
+        actfunc="relu",
         resolution=resolution,
     ).to(device)
 
@@ -62,7 +62,7 @@ def test_downsample_sebottleneck() -> None:
         layers=(3, 4, 6, 3),
         input_channels=3,
         output_channels=100,
-        activation="relu",
+        actfunc="relu",
         resolution=resolution,
     ).to(device)
 
@@ -85,7 +85,7 @@ def test_upsample_mybasicblock() -> None:
         layers=(3, 4, 6, 3),
         input_channels=dim,
         output_channels=ch,
-        activation="relu",
+        actfunc="relu",
         resolution=resolution,
     ).to(device)
     print(resnet)
@@ -106,7 +106,7 @@ def test_upsample_mybottleneck() -> None:
         layers=(3, 4, 6, 3),
         input_channels=dim,
         output_channels=ch,
-        activation="relu",
+        actfunc="relu",
         resolution=resolution,
     ).to(device)
 
@@ -126,7 +126,7 @@ def test_upsample_sebottleneck() -> None:
         layers=(3, 4, 6, 3),
         input_channels=dim,
         output_channels=ch,
-        activation="relu",
+        actfunc="relu",
         resolution=resolution,
     ).to(device)
 
@@ -142,20 +142,20 @@ def test_up_down_sampling_with_bottleneck() -> None:
     latent_dimension = 100
 
     downsampling = DownSamplingResNet(
-        block,
+        block,  # type: ignore
         layers=(3, 4, 6, 3),
         input_channels=input_channel,
         output_channels=latent_dimension,
-        activation="relu",
+        actfunc="relu",
         resolution=resolution,
     ).to(device)
 
     upsampling = UpSamplingResNet(
-        block,
+        block,  # type: ignore
         layers=(3, 4, 6, 3),
         input_channels=latent_dimension,
         output_channels=input_channel,
-        activation="relu",
+        actfunc="relu",
         resolution=resolution,
     ).to(device)
 

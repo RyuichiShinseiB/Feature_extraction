@@ -15,11 +15,9 @@ from torcheval.metrics.functional import binary_accuracy, multiclass_accuracy
 from src.configs.model_configs import TrainClassificationModel
 from src.loss_function import LossFunction
 from src.mytyping import Device
-from src.predefined_models._load_model import LoadModel
 from src.utilities import (
     EarlyStopping,
     display_cfg,
-    get_dataloader,
 )
 
 
@@ -230,10 +228,7 @@ def main(_cfg: DictConfig) -> None:
 
     # 再構成画像を保存する間隔
     # Storage interval of reconstructed images
-    save_interval = (
-        cfg.train.train_hyperparameter.epochs
-        // cfg.train.train_hyperparameter.num_save_reconst_image
-    )
+    save_interval = cfg.verbose_interval
 
     if save_interval == 0:
         save_interval = 1
@@ -244,15 +239,7 @@ def main(_cfg: DictConfig) -> None:
 
     # モデルの選択とハイパラの設定
     # Model selection and hyperparameter configuration from configs.yaml
-    feature = LoadModel.load_model(
-        cfg.model.feature.network_type,
-        cfg.model.feature.hyper_parameters,
-    )
-    classifier = LoadModel.load_model(
-        cfg.model.classifier.network_type,
-        cfg.model.classifier.hyper_parameters,
-    )
-    model = torch.nn.Sequential(feature, classifier).to(device)
+    model = cfg.create_sequential_model(device)
 
     # Early stoppingの宣言
     # 過学習を防ぐためにepochの途中で終了する
@@ -269,15 +256,16 @@ def main(_cfg: DictConfig) -> None:
     # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、  # noqa: E501
     # 訓練用と検証用のデータローダーを作製する。
     # generator_seedは、データセットを分割するときのseed値
-    train_dataloader, val_dataloader = get_dataloader(
-        cfg.dataset.path,
-        cfg.dataset.transform,
-        split_ratio=(0.8, 0.2),
-        batch_size=cfg.train.train_hyperparameter.batch_size,
-        shuffle=True,
-        generator_seed=42,
-        cls_conditions=cfg.dataset.cls_conditions,
-    )
+    train_dataloader, val_dataloader = cfg.create_dataloader((0.8, 0.2))
+    # train_dataloader, val_dataloader = get_dataloader(
+    #     cfg.dataset.path,
+    #     cfg.dataset.transform,
+    #     split_ratio=(0.8, 0.2),
+    #     batch_size=cfg.train.train_hyperparameter.batch_size,
+    #     shuffle=True,
+    #     generator_seed=42,
+    #     cls_conditions=cfg.dataset.cls_conditions,
+    # )
 
     # length_of_dataloader = len(train_dataloader)
     # latent_interval = length_of_dataloader // 10

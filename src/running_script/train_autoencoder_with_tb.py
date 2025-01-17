@@ -6,7 +6,7 @@ from pathlib import Path
 import hydra
 import torch
 import torchvision.utils as vutils
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 
@@ -15,7 +15,6 @@ from src.loss_function import LossFunction
 from src.predefined_models._load_model import model_define
 from src.utilities import (
     EarlyStopping,
-    display_cfg,
     get_dataloader,
     weight_init,
 )
@@ -64,7 +63,7 @@ def _write_loss_progress(
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
-    display_cfg(_cfg)
+    print(OmegaConf.to_yaml(_cfg))
     cfg = TrainAutoencoderConfig.from_dictconfig(_cfg)
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先

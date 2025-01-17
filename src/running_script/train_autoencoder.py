@@ -7,7 +7,7 @@ import hydra
 import matplotlib.pyplot as plt
 import torch
 import torchvision.utils as vutils
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from torch import optim
 
 from src.configs.model_configs import TrainAutoencoderConfig
@@ -18,7 +18,6 @@ from src.mytyping import Tensor
 from src.predefined_models._load_model import model_define
 from src.utilities import (
     EarlyStopping,
-    display_cfg,
     get_dataloader,
     weight_init,
 )
@@ -31,7 +30,7 @@ from src.utilities import (
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
-    display_cfg(_cfg)
+    print(OmegaConf.to_yaml(_cfg))
     cfg = TrainAutoencoderConfig.from_dictconfig(_cfg)
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先

@@ -7,7 +7,7 @@ import hydra
 import torch
 import torch.nn.functional as F
 import torch.utils.data
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 from torcheval.metrics.functional import binary_accuracy, multiclass_accuracy
@@ -15,10 +15,7 @@ from torcheval.metrics.functional import binary_accuracy, multiclass_accuracy
 from src.configs.model_configs import TrainClassificationModel
 from src.loss_function import LossFunction
 from src.mytyping import Device
-from src.utilities import (
-    EarlyStopping,
-    display_cfg,
-)
+from src.utilities import EarlyStopping
 
 
 class TrainReturnDict(TypedDict):
@@ -217,7 +214,7 @@ def _train_model(
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
     print("Show training configurations")
-    display_cfg(_cfg)
+    print(OmegaConf.to_yaml(_cfg))
     cfg = TrainClassificationModel.from_dictconfig(_cfg)
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先

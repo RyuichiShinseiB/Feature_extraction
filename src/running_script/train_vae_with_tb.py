@@ -7,7 +7,7 @@ from pathlib import Path
 import hydra
 import torch
 import torchvision.utils as vutils
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from torch import optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -16,11 +16,7 @@ from src.configs.model_configs import TrainVAEConfig
 from src.loss_function import LossFunction
 from src.mytyping import Device, Tensor
 from src.predefined_models._build_VAE import VAEFrame
-from src.utilities import (
-    EarlyStopping,
-    display_cfg,
-    weight_init,
-)
+from src.utilities import EarlyStopping, weight_init
 
 
 @dataclass
@@ -208,7 +204,7 @@ def train_model(
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
-    display_cfg(_cfg)
+    print(OmegaConf.to_yaml(_cfg))
     cfg = TrainVAEConfig.from_dictconfig(_cfg)
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先

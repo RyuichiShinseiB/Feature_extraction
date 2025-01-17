@@ -1,9 +1,7 @@
 # Standard Library
-from dataclasses import asdict
 from io import BytesIO
 from itertools import chain
 from pathlib import Path
-from pprint import pprint
 from typing import (
     Any,
     Callable,
@@ -17,18 +15,12 @@ from typing import (
 import numpy as np
 import torch
 import torch.onnx as onnx
-from omegaconf import DictConfig, OmegaConf
 from torch import nn
 from torch.utils.data import DataLoader, Subset, random_split
 from torchvision.datasets import ImageFolder, VisionDataset
 from torchvision.datasets.folder import make_dataset, pil_loader
 from torchvision.transforms import transforms
 from tqdm import tqdm
-
-from ..configs.model_configs import (
-    TrainAutoencoderConfig,
-    TrainMAEViTConfig,
-)
 
 # Local Library
 from ..mytyping import (
@@ -246,15 +238,6 @@ def calc_loss(
     x_pred, _ = model(x)
     loss = loss_func(x_pred, x)
     return loss, x_pred
-
-
-def display_cfg(
-    cfg: TrainAutoencoderConfig | TrainMAEViTConfig | DictConfig,
-) -> None:
-    if isinstance(cfg, (TrainAutoencoderConfig, TrainMAEViTConfig)):
-        pprint(asdict(cfg))
-    elif isinstance(cfg, DictConfig):
-        print(OmegaConf.to_yaml(cfg, resolve=True))
 
 
 def save_onnx(

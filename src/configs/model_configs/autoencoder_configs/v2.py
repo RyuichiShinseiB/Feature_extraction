@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 from ....mytyping import Device
 from ....predefined_models._build_VAE import VAEFrame
+from ....predefined_models._load_model import LoadModel
 from ....utilities import find_project_root, get_dataloader
 from ..base_configs import (
     NetworkConfig,
@@ -78,5 +79,10 @@ class TrainVAEConfig(RecursiveDataclass):
         )
 
     def create_vae_model(self, device: Device = "cpu") -> VAEFrame:
-        model = VAEFrame.build_from_config(self.model).to(device)
+        model = VAEFrame(
+            LoadModel.load_model_from_config(self.model.encoder),
+            LoadModel.load_model_from_config(self.model.latent_mean),
+            LoadModel.load_model_from_config(self.model.latent_var),
+            LoadModel.load_model_from_config(self.model.decoder),
+        ).to(device)
         return model

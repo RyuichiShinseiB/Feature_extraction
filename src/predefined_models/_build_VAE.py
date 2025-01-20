@@ -1,26 +1,23 @@
 import torch
 from torch import nn
 
-from ..configs.model_configs.autoencoder_configs.v2 import _VAEModelConfig
-from ..configs.model_configs.base_configs import NetworkConfig
-from ..mytyping import Tensor
+from ..mytyping import Model, Tensor
 from . import _ResNetVAE as resmod
-from ._load_model import LoadModel
 
 
 class VAEFrame(nn.Module):
     def __init__(
         self,
-        encoder: NetworkConfig,
-        latent_mean: NetworkConfig,
-        latent_var: NetworkConfig,
-        decoder: NetworkConfig,
+        encoder: Model,
+        latent_mean: Model,
+        latent_var: Model,
+        decoder: Model,
     ) -> None:
         super().__init__()
-        self.encoder = LoadModel.from_config(encoder)
-        self.latent_mean = LoadModel.from_config(latent_mean)
-        self.latent_var = LoadModel.from_config(latent_var)
-        self.decoder = LoadModel.from_config(decoder)
+        self.encoder = encoder
+        self.latent_mean = latent_mean
+        self.latent_var = latent_var
+        self.decoder = decoder
 
         if isinstance(self.decoder, resmod.UpSamplingResNet):
             self._forward = self._resnetvae_forward
@@ -89,14 +86,3 @@ class VAEFrame(nn.Module):
         self.eval()
         z = self.decoder(z)
         return z
-
-    @classmethod
-    def build_from_config(cls, cfg: _VAEModelConfig) -> "VAEFrame":
-        if cfg.decoder.network_type == "UpSamplingResNet":
-            if cfg.encoder.network_type != "DownSamplingResNet":
-                raise ValueError(
-                    "If `DownSamplingResNet is chosen as decoder, "
-                    "encoder must be `DownSamplingResNet`"
-                )
-
-        return cls(cfg.encoder, cfg.latent_mean, cfg.latent_var, cfg.decoder)

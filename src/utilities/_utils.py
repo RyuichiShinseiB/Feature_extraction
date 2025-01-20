@@ -304,11 +304,19 @@ def is_tuple_of_ints(
 
 
 def find_project_root(
-    start_path: Path = Path.cwd(), marker: str = "pyproject.toml"
+    start_path: Path = Path.cwd(),
+    marker: str = "pyproject.toml",
+    relative: bool = False,
 ) -> Path:
     current_path = start_path
     while current_path != current_path.parent:
         if (current_path / marker).exists():
+            if relative:
+                relative_start = start_path.relative_to(current_path)
+                num_up_lvl = len(relative_start.parts)
+                root = Path("../" * num_up_lvl or "./")
+                return root
+
             return current_path
         current_path = current_path.parent
     raise FileNotFoundError(f"{marker} not found in any parent directories.")

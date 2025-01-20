@@ -85,8 +85,7 @@ class FeatureDatetimeCfg:
                 f": `{self.running_datetime('%Y/%m/%d %H:%M:%S')}`",
             )
 
-        print(res[0])
-        print(res[0].exists())
+        self.feature_path = res[0].parent
         with initialize(str(".." / res[0]), version_base=None):
             _cfg = compose("config")
         self.extract_cfg = ExtractConfig.from_dictconfig(_cfg)

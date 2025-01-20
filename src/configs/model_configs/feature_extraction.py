@@ -60,15 +60,17 @@ class ExtractConfig(RecursiveDataclass):
     def create_model(self, device: Device = "cpu") -> torch.nn.Sequential:
         root = find_project_root()
         pth_dir = root / "models" / self.train.trained_save_path
-        base_pth_name = "model_parameters.pth"
+        base_pth_name = "model_parameters"
         pths = [
             pth.name
             for pth in pth_dir.glob("*.pth")
             if base_pth_name in pth.name
         ]
+        print(pths)
         pth = self._get_longest_value(pths)
         pth_path = pth_dir / pth
 
+        print(f"Load trained parameters: {pth_path}")
         first_stage = LoadModel.load_model(
             self.model.first_stage.network_type,
             self.model.first_stage.hyper_parameters,

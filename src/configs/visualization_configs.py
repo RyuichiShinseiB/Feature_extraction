@@ -5,10 +5,8 @@ from pathlib import Path
 from hydra import compose, initialize
 from omegaconf import DictConfig, OmegaConf
 
-from src.configs.model_configs import ExtractConfig
-from src.utilities import find_project_root
-
-# from ..utilities import find_project_root
+from ..utilities import find_project_root
+from .model_configs import ExtractConfig
 
 
 @dataclass

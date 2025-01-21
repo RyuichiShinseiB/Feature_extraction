@@ -75,8 +75,8 @@ class FeatureDatetimeCfg:
 
     def __post_init__(self) -> None:
         run_datetime = self.running_datetime()
-        root = find_project_root(relative=True)
-        feature_dir = root / "reports/features"
+        self.root = find_project_root(relative=True)
+        feature_dir = self.root / "reports/features"
         res = list(feature_dir.glob(f"*/{run_datetime}/.hydra"))
         if res == []:
             raise FileNotFoundError(
@@ -85,10 +85,27 @@ class FeatureDatetimeCfg:
                 f": `{self.running_datetime('%Y/%m/%d %H:%M:%S')}`",
             )
 
-        self.feature_path = res[0].parent
         with initialize(str(".." / res[0]), version_base=None):
             _cfg = compose("config")
         self.extract_cfg = ExtractConfig.from_dictconfig(_cfg)
+
+    @property
+    def figure_path(self) -> Path:
+        return (
+            self.root
+            / "reports/figures"
+            / self.extract_cfg.model.name
+            / self.running_datetime()
+        )
+
+    @property
+    def feature_path(self) -> Path:
+        return (
+            self.root
+            / "reports/features"
+            / self.extract_cfg.model.name
+            / self.running_datetime()
+        )
 
     @classmethod
     def from_datetime(

@@ -1,5 +1,7 @@
 from collections.abc import Generator, Sequence
+from pathlib import Path
 
+import polars as pl
 from PIL import Image
 
 
@@ -58,3 +60,134 @@ class PasteLocation:
             canvas.paste(img, loc)
 
         return canvas
+
+
+def sample_images(
+    df: pl.DataFrame, img_dir: Path, num_sample: int
+) -> dict[int, dict[int, list[Image.Image]]]:
+    targets = df.select("target").unique().to_series()
+    each_target_images: dict[int, dict[int, list[Image.Image]]] = {}
+    for t in targets.sort():
+        unique_dirname = (
+            df.filter(pl.col("target") == t)
+            .select(pl.col("dirname"))
+            .unique("dirname")
+            .to_series()
+        )
+        images: dict[int, list[Image.Image]] = {}
+        for i in unique_dirname.sort():
+            paths = (
+                df.filter(pl.col("dirname") == i)
+                .select(
+                    pl.concat_str(
+                        [pl.col("dirname").cast(pl.Utf8), pl.col("filename")],
+                        separator="/",
+                    )
+                )
+                .to_series()
+            )
+            paths = paths.sample(
+                min(num_sample, len(paths)),
+                with_replacement=True,
+                shuffle=True,
+            )
+            images[i] = [Image.open(img_dir / p).convert("L") for p in paths]
+        each_target_images[t] = images
+    return each_target_images
+
+
+def concat_each_target_images(
+    sampled_imgs: dict[int, dict[int, list[Image.Image]]],
+    pasteloc: PasteLocation,
+) -> dict[int, dict[int, Image.Image]]:
+    each_target_cat_imgs: dict[int, dict[int, Image.Image]] = {}
+    for t, images in sampled_imgs.items():
+        cat_imgs: dict[int, Image.Image] = {}
+        for d, image in images.items():
+            concated = pasteloc.concat_images(image)
+            cat_imgs[d] = concated
+        each_target_cat_imgs[t] = cat_imgs
+    return each_target_cat_imgs
+
+
+def save_cated_images(
+    cated_imgs: dict[int, dict[int, Image.Image]],
+    dst_dir: Path,
+    *,
+    fname_format: str | None = None,
+    target_format: dict[int, str] | None = None,
+    sample_format: dict[int, str] | None = None,
+) -> None:
+    for t, imgs in cated_imgs.items():
+        for d, concated in imgs.items():
+            if not dst_dir.exists():
+                dst_dir.mkdir(parents=True)
+            if fname_format is None:
+                fname = f"label_{t}_sample_{d}.jpg"
+            else:
+                fname = format_fname(
+                    fname_format,
+                    t,
+                    d,
+                    target_format,
+                    sample_format,
+                )
+
+            concated.save(dst_dir / fname)
+
+
+def concat_images(
+    df: pl.DataFrame,
+    img_dir: Path,
+    imsize: int,
+    concat_tile_size: tuple[int, int] = (3, 3),
+    *,
+    filter_expr: pl.Expr | None = None,
+) -> dict[int, dict[int, Image.Image]]:
+    if filter_expr is None:
+        flted_df = df
+    else:
+        flted_df = df.filter(filter_expr)
+
+    num_sample = concat_tile_size[0] * concat_tile_size[1]
+
+    sampled_imgs = sample_images(flted_df, img_dir, num_sample)
+
+    pasteloc = PasteLocation(
+        imsize=(imsize, imsize),
+        tile_size=concat_tile_size,
+        pad_size=(2, 2),
+    )
+
+    each_target_cat_imgs = concat_each_target_images(sampled_imgs, pasteloc)
+    return each_target_cat_imgs
+
+
+def format_fname(
+    base: str,
+    t: int,
+    d: int,
+    t_cvtr: dict[int, str] | None = None,
+    d_cvtr: dict[int, str] | None = None,
+) -> str:
+    t_str = None
+    if t_cvtr is not None:
+        t_str = t_cvtr[t]
+    d_str = None
+    if d_cvtr is not None:
+        d_str = d_cvtr[d]
+
+    num_t_d_format = (base.count(r"{t}"), base.count(r"{d}"))
+    if num_t_d_format == (0, 0):
+        return base
+    elif num_t_d_format == (0, 1):
+        return base.format(d=d_str or d)
+    elif num_t_d_format == (1, 0):
+        return base.format(t=t_str or t)
+    elif num_t_d_format == (1, 1):
+        return base.format(t=t_str or t, d=d_str or d)
+    else:
+        raise ValueError(
+            "Incomplete keyword specification.",
+            f"num_t={num_t_d_format[0]}, " f"num_d={num_t_d_format[1]}",
+        )

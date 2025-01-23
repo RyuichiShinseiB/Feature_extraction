@@ -80,8 +80,8 @@ class TrainClassificationModel(RecursiveDataclass):
         )
 
     def create_model(self) -> tuple[Model, Model]:
-        first_stage = LoadModel.load_model_from_config(self.model.classifier)
-        second_stage = LoadModel.load_model_from_config(self.model.feature)
+        first_stage = LoadModel.load_model_from_config(self.model.feature)
+        second_stage = LoadModel.load_model_from_config(self.model.classifier)
         return first_stage, second_stage
 
     def create_sequential_model(

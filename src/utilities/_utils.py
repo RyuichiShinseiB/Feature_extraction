@@ -84,6 +84,7 @@ def get_dataloader(
     generator_seed: int | None = 42,
     extraction: bool = False,
     cls_conditions: dict[int, list[str]] | None = None,
+    is_valid_file: Callable[[str], bool] | None = None,
 ) -> DataLoader:
     ...
 
@@ -99,6 +100,7 @@ def get_dataloader(
     generator_seed: int | None = 42,
     extraction: bool = False,
     cls_conditions: dict[int, list[str]] | None = None,
+    is_valid_file: Callable[[str], bool] | None = None,
 ) -> tuple[DataLoader, DataLoader]:
     ...
 
@@ -113,6 +115,7 @@ def get_dataloader(
     generator_seed: int | None = 42,
     extraction: bool = False,
     cls_conditions: dict[int, list[str]] | None = None,
+    is_valid_file: Callable[[str], bool] | None = None,
 ) -> tuple[DataLoader, DataLoader] | DataLoader:
     ...
 
@@ -126,6 +129,7 @@ def get_dataloader(
     generator_seed: int | None = 42,
     extraction: bool = False,
     cls_conditions: dict[int, list[str]] | None = None,
+    is_valid_file: Callable[[str], bool] | None = None,
 ) -> tuple[DataLoader, DataLoader] | DataLoader:
     """specifying parameters and output dataloader
 
@@ -159,11 +163,17 @@ def get_dataloader(
 
     if extraction:
         dataset = ForExtractFolder(
-            dataset_path, transform=transform, cls_conditions=cls_conditions
+            dataset_path,
+            transform=transform,
+            cls_conditions=cls_conditions,
+            is_valid_file=is_valid_file,
         )
     else:
         dataset = MyImageFolder(
-            dataset_path, transform=transform, cls_conditions=cls_conditions
+            dataset_path,
+            transform=transform,
+            cls_conditions=cls_conditions,
+            is_valid_file=is_valid_file,
         )
 
     if split_ratio is None:
@@ -391,10 +401,7 @@ class BaseMyDataset(VisionDataset):
             return lambda _: True
         valid_classes = set(chain.from_iterable(conditions.values()))
 
-        def filter_(c: str) -> bool:
-            return c in valid_classes
-
-        return filter_
+        return lambda c: c in valid_classes
 
     @staticmethod
     def _target_transform(

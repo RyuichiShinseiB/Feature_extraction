@@ -207,14 +207,14 @@ def _train_model(
 
 @hydra.main(
     version_base=None,
-    config_path="../configs/train_conf/classifilation",
+    config_path="../configs/train_conf/classification",
     # config_name="ResNet-highlow_softmax",
     config_name="ResNet-highlow",
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration
     print("Show training configurations")
-    print(OmegaConf.to_yaml(_cfg))
+    print(OmegaConf.to_yaml(_cfg, resolve=True))
     cfg = TrainClassificationModel.from_dictconfig(_cfg)
 
     # 訓練済みモデル、訓練途中の再構成画像の保存先
@@ -253,7 +253,9 @@ def main(_cfg: DictConfig) -> None:
     # split_ratioを設定していると（何かしら代入していると）、データセットを分割し、  # noqa: E501
     # 訓練用と検証用のデータローダーを作製する。
     # generator_seedは、データセットを分割するときのseed値
-    train_dataloader, val_dataloader = cfg.create_dataloader((0.8, 0.2))
+    train_dataloader, val_dataloader = cfg.create_dataloader(
+        (0.8, 0.2), ignore_check_data=True
+    )
     # train_dataloader, val_dataloader = get_dataloader(
     #     cfg.dataset.path,
     #     cfg.dataset.transform,

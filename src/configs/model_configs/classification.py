@@ -91,7 +91,6 @@ class TrainClassificationModel(RecursiveDataclass):
         model = torch.nn.Sequential(stages[0], stages[1]).to(device)
         return model
 
-    # def callback_is_not_check_data(self) -> Callable[[str], bool]:
     def get_not_check_data(self) -> set[str]:
         dataset_path = find_project_root() / self.dataset.path
         data_paths = list(dataset_path.glob("*/*.png"))

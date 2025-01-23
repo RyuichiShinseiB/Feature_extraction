@@ -31,9 +31,10 @@ def main(_cfg: DictConfig) -> None:
     model = cfg.create_model(device)
 
     # データローダーを設定
-    # extraction=Trueにすることで、特徴量、ディレクトリ名、ファイル名を取得
     # 訓練用データでの特徴量抽出
-    train_dataloader, check_dataloader = cfg.create_dataloader()
+    train_dataloader, check_dataloader = cfg.create_dataloader(
+        ignore_check_data=True
+    )
     print("Extraction from training data...")
     train_df = feat_ext.get_feature_table(model, train_dataloader, device)
     train_df.select(pl.all().sort_by("filename")).write_csv(

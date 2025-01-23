@@ -349,6 +349,8 @@ class BaseMyDataset(VisionDataset):
 
         classes, class_to_idx = self.find_classes(self.root)
 
+        if is_valid_file is not None:
+            extensions = None
         samples = self.make_dataset(
             self.root, class_to_idx, extensions, is_valid_file
         )

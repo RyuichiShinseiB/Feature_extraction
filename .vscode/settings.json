@@ -15,6 +15,9 @@
     },
 
     // 自作パッケージなどを扱いたい場合はこれをやっておくと確実
+    "python.analysis.include": [
+        "${workspaceFolder}/src"
+    ],
     "python.analysis.extraPaths": [
         "${workspaceFolder}/src"
     ],
@@ -31,12 +34,7 @@
     "ruff.path": [
         "${workspaceFolder}/.venv/bin/ruff"
     ],
-    "ruff.lint.args": [
-        "--config=${workspaceFolder}/pyproject.toml"
-    ],
-    "ruff.format.args": [
-        "--config=${workspaceFolder}/pyproject.toml"
-    ],
+    "ruff.configuration": "pyproject.toml",
     "ruff.organizeImports": true,
 
     // docstring のスタイル お好きに
@@ -108,4 +106,5 @@
         "yticks",
         "zorder"
     ],
+    "svg.preview.background": "transparent",
 }

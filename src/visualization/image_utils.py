@@ -77,7 +77,7 @@ def sample_images(
         images: dict[int, list[Image.Image]] = {}
         for i in unique_dirname.sort():
             paths = (
-                df.filter(pl.col("dirname") == i)
+                df.filter((pl.col("dirname") == i) & (pl.col("target") == t))
                 .select(
                     pl.concat_str(
                         [pl.col("dirname").cast(pl.Utf8), pl.col("filename")],

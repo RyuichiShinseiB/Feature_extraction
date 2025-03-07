@@ -3,11 +3,12 @@ from collections.abc import Callable
 from torch import nn
 
 from ..mytyping import ActFuncName, Device, Tensor
-from ._CNN_modules import add_actfunc
+from ._CNN_modules import DownShape, SELayer, UpShape, add_actfunc
 
 
+##### SimpleCAE #####
 # ========================== Top For 16x16px size =========================== #
-class Encoder16(nn.Module):
+class SimpleConvEncoder16(nn.Module):
     def __init__(
         self,
         input_channels: int = 1,
@@ -17,7 +18,7 @@ class Encoder16(nn.Module):
         output_actfunc: ActFuncName = "relu",
         device: Device = "cpu",
     ) -> None:
-        """Encoder block of SimpleCAE16
+        """SimpleConvEncoder block of SimpleCAE16
 
         Parameters
         ----------
@@ -100,7 +101,7 @@ class Encoder16(nn.Module):
 
 
 ######################################################
-class Decoder16(nn.Module):
+class SimpleConvDecoder16(nn.Module):
     def __init__(
         self,
         latent_dimensions: int = 10,
@@ -110,7 +111,7 @@ class Decoder16(nn.Module):
         output_actfunc: ActFuncName = "tanh",
         device: Device = "cpu",
     ) -> None:
-        """Decoder block of SimpleCAE16
+        """SimpleConvDecoder block of SimpleCAE16
 
         Parameters
         ----------
@@ -239,7 +240,7 @@ class SimpleCAE16(nn.Module):
         """
         super(SimpleCAE16, self).__init__()
         self.device = device
-        self.encoder: Callable[[Tensor], Tensor] = Encoder16(
+        self.encoder: Callable[[Tensor], Tensor] = SimpleConvEncoder16(
             input_channels,
             encoder_base_channels,
             latent_dimensions,
@@ -247,7 +248,7 @@ class SimpleCAE16(nn.Module):
             encoder_output_actfunc,
             device,
         )
-        self.decoder: Callable[[Tensor], Tensor] = Decoder16(
+        self.decoder: Callable[[Tensor], Tensor] = SimpleConvDecoder16(
             latent_dimensions,
             decoder_base_channels,
             input_channels,
@@ -266,7 +267,7 @@ class SimpleCAE16(nn.Module):
 
 
 # ========================== Top For 32x32px size =========================== #
-class Encoder32(nn.Module):
+class SimpleConvEncoder32(nn.Module):
     def __init__(
         self,
         input_channels: int = 1,
@@ -345,7 +346,7 @@ class Encoder32(nn.Module):
 
 
 ######################################################
-class Decoder32(nn.Module):
+class SimpleConvDecoder32(nn.Module):
     def __init__(
         self,
         latent_dimensions: int = 10,
@@ -437,7 +438,7 @@ class SimpleCAE32(nn.Module):
     ) -> None:
         super(SimpleCAE32, self).__init__()
         self.device = device
-        self.encoder: Callable[[Tensor], Tensor] = Encoder32(
+        self.encoder: Callable[[Tensor], Tensor] = SimpleConvEncoder32(
             input_channels,
             encoder_base_channels,
             latent_dimensions,
@@ -445,7 +446,7 @@ class SimpleCAE32(nn.Module):
             encoder_output_actfunc,
             device,
         )
-        self.decoder: Callable[[Tensor], Tensor] = Decoder32(
+        self.decoder: Callable[[Tensor], Tensor] = SimpleConvDecoder32(
             latent_dimensions,
             decoder_base_channels,
             input_channels,
@@ -464,7 +465,7 @@ class SimpleCAE32(nn.Module):
 
 
 # ========================== Top For 64x64px size =========================== #
-class Encoder64(nn.Module):
+class SimpleConvEncoder64(nn.Module):
     def __init__(
         self,
         input_channels: int = 1,
@@ -556,7 +557,7 @@ class Encoder64(nn.Module):
 
 
 ######################################################
-class Decoder64(nn.Module):
+class SimpleConvDecoder64(nn.Module):
     def __init__(
         self,
         latent_dimensions: int = 10,
@@ -662,7 +663,7 @@ class SimpleCAE64(nn.Module):
         super(SimpleCAE64, self).__init__()
         self.device = device
 
-        self.encoder = Encoder64(
+        self.encoder = SimpleConvEncoder64(
             input_channels,
             encoder_base_channels,
             latent_dimensions,
@@ -671,7 +672,7 @@ class SimpleCAE64(nn.Module):
             device,
         )
 
-        self.decoder = Decoder64(
+        self.decoder = SimpleConvDecoder64(
             latent_dimensions,
             decoder_base_channels,
             input_channels,
@@ -690,7 +691,7 @@ class SimpleCAE64(nn.Module):
 
 
 # ========================= Top For 128x128px size ========================== #
-class Encoder128(nn.Module):
+class SimpleConvEncoder128(nn.Module):
     def __init__(
         self,
         input_channels: int = 1,
@@ -795,7 +796,7 @@ class Encoder128(nn.Module):
 
 
 ######################################################
-class Decoder128(nn.Module):
+class SimpleConvDecoder128(nn.Module):
     def __init__(
         self,
         latent_dimensions: int = 10,
@@ -917,7 +918,7 @@ class SimpleCAE128(nn.Module):
         if encoder_output_actfunc is None:
             encoder_output_actfunc = encoder_actfunc
         self.device = device
-        self.encoder = Encoder128(
+        self.encoder = SimpleConvEncoder128(
             input_channels,
             encoder_base_channels,
             latent_dimensions,
@@ -925,7 +926,7 @@ class SimpleCAE128(nn.Module):
             encoder_output_actfunc,
             device,
         )
-        self.decoder = Decoder128(
+        self.decoder = SimpleConvDecoder128(
             latent_dimensions,
             decoder_base_channels,
             input_channels,
@@ -941,3 +942,336 @@ class SimpleCAE128(nn.Module):
 
 
 # ======================== Bottom For 128x128px size ======================== #
+
+
+##### SECAE #####
+# ========================== Top For 32x32px size =========================== #
+class SEConvEncoder32(nn.Module):
+    def __init__(
+        self,
+        input_channels: int = 1,
+        encoder_base_channels: int = 64,
+        latent_dimensions: int = 10,
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "relu",
+        device: Device = "cpu",
+    ) -> None:
+        super(SEConvEncoder32, self).__init__()
+        self.device = device
+
+        self.l1 = nn.Sequential(
+            DownShape(input_channels, encoder_base_channels, actfunc),
+            SELayer(encoder_base_channels),
+        )
+        self.l2 = nn.Sequential(
+            DownShape(
+                encoder_base_channels, encoder_base_channels * 2, actfunc
+            ),
+            SELayer(encoder_base_channels * 2),
+        )
+        self.l3 = nn.Sequential(
+            DownShape(
+                encoder_base_channels * 2,
+                encoder_base_channels * 4,
+                actfunc,
+            ),
+            SELayer(encoder_base_channels * 4),
+        )
+        self.l4 = nn.Sequential(
+            DownShape(
+                encoder_base_channels * 4,
+                encoder_base_channels * 8,
+                actfunc,
+            ),
+            SELayer(encoder_base_channels * 8),
+        )
+        self.l5 = nn.Sequential(
+            DownShape(
+                encoder_base_channels * 8, latent_dimensions, output_actfunc
+            ),
+            SELayer(latent_dimensions),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        h: Tensor = self.l1(x)
+        h = self.l2(h)
+        h = self.l3(h)
+        h = self.l4(h)
+        h = self.l5(h)
+
+        return h
+
+
+########################################
+
+
+class SEConvDecoder32(nn.Module):
+    def __init__(
+        self,
+        latent_dimensions: int = 10,
+        decoder_base_channels: int = 64,
+        input_channels: int = 1,
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "tanh",
+        device: Device = "cpu",
+    ) -> None:
+        super(SEConvDecoder32, self).__init__()
+        self.device = device
+
+        self.l1 = nn.Sequential(
+            UpShape(latent_dimensions, decoder_base_channels * 8, actfunc),
+            SELayer(decoder_base_channels * 8),
+        )
+        self.l2 = nn.Sequential(
+            UpShape(
+                decoder_base_channels * 8,
+                decoder_base_channels * 4,
+                actfunc,
+            ),
+            SELayer(decoder_base_channels * 4),
+        )
+        self.l3 = nn.Sequential(
+            UpShape(
+                decoder_base_channels * 4,
+                decoder_base_channels * 2,
+                actfunc,
+            ),
+            SELayer(decoder_base_channels * 2),
+        )
+        self.l4 = nn.Sequential(
+            UpShape(decoder_base_channels * 2, decoder_base_channels, actfunc),
+            SELayer(decoder_base_channels),
+        )
+        self.l5 = nn.Sequential(
+            UpShape(decoder_base_channels, input_channels, output_actfunc),
+            SELayer(input_channels),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.l1(x)
+        x = self.l2(x)
+        x = self.l3(x)
+        x = self.l4(x)
+        x = self.l5(x)
+
+        return x
+
+
+########################################
+
+
+class SECAE32(nn.Module):
+    def __init__(
+        self,
+        input_channels: int,
+        latent_dimensions: int,
+        encoder_base_channels: int,
+        decoder_base_channels: int,
+        encoder_actfunc: ActFuncName = "relu",
+        decoder_actfunc: ActFuncName = "relu",
+        encoder_output_actfunc: ActFuncName = "sigmoid",
+        decoder_output_actfunc: ActFuncName = "tanh",
+        device: Device = "cpu",
+    ) -> None:
+        super(SECAE32, self).__init__()
+        self.device = device
+        self.encoder = SEConvEncoder32(
+            input_channels,
+            encoder_base_channels,
+            latent_dimensions,
+            encoder_actfunc,
+            encoder_output_actfunc,
+            device,
+        )
+        self.decoder = SEConvDecoder32(
+            latent_dimensions,
+            decoder_base_channels,
+            input_channels,
+            decoder_actfunc,
+            decoder_output_actfunc,
+            device,
+        )
+
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        z: Tensor = self.encoder(x)
+        x_pred: Tensor = self.decoder(z)
+        return x_pred, z
+
+
+# ========================= Bottom For 32x32px size ========================= #
+
+
+# ========================== Top For 64x64px size =========================== #
+class SEConvEncoder64(nn.Module):
+    def __init__(
+        self,
+        input_channels: int = 1,
+        encoder_base_channels: int = 64,
+        latent_dimensions: int = 10,
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "relu",
+        device: Device = "cpu",
+    ) -> None:
+        super(SEConvEncoder64, self).__init__()
+        if output_actfunc is None:
+            output_actfunc = actfunc
+
+        self.device = device
+
+        self.l1 = nn.Sequential(
+            DownShape(input_channels, encoder_base_channels, actfunc),
+            SELayer(encoder_base_channels),
+        )
+        self.l2 = nn.Sequential(
+            DownShape(
+                encoder_base_channels, encoder_base_channels * 2, actfunc
+            ),
+            SELayer(encoder_base_channels * 2),
+        )
+        self.l3 = nn.Sequential(
+            DownShape(
+                encoder_base_channels * 2,
+                encoder_base_channels * 4,
+                actfunc,
+            ),
+            SELayer(encoder_base_channels * 4),
+        )
+        self.l4 = nn.Sequential(
+            DownShape(
+                encoder_base_channels * 4,
+                encoder_base_channels * 8,
+                actfunc,
+            ),
+            SELayer(encoder_base_channels * 8),
+        )
+        self.l5 = nn.Sequential(
+            DownShape(
+                encoder_base_channels * 8,
+                encoder_base_channels * 16,
+                actfunc,
+            ),
+            SELayer(encoder_base_channels * 16),
+        )
+        self.l6 = nn.Sequential(
+            DownShape(
+                encoder_base_channels * 16,
+                latent_dimensions,
+                output_actfunc,
+            ),
+            SELayer(latent_dimensions),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        h: Tensor = self.l1(x)
+        h = self.l2(h)
+        h = self.l3(h)
+        h = self.l4(h)
+        h = self.l5(h)
+        h = self.l6(h)
+
+        return h
+
+
+########################################
+
+
+class SEConvDecoder64(nn.Module):
+    def __init__(
+        self,
+        latent_dimensions: int = 10,
+        decoder_base_channels: int = 64,
+        input_channels: int = 1,
+        actfunc: ActFuncName = "relu",
+        output_actfunc: ActFuncName = "tanh",
+        device: Device = "cpu",
+    ) -> None:
+        super(SEConvDecoder64, self).__init__()
+        self.device = device
+
+        self.l1 = nn.Sequential(
+            UpShape(latent_dimensions, decoder_base_channels * 16, actfunc),
+            SELayer(decoder_base_channels * 16),
+        )
+        self.l2 = nn.Sequential(
+            UpShape(
+                decoder_base_channels * 16,
+                decoder_base_channels * 8,
+                actfunc,
+            ),
+            SELayer(decoder_base_channels * 8),
+        )
+        self.l3 = nn.Sequential(
+            UpShape(
+                decoder_base_channels * 8,
+                decoder_base_channels * 4,
+                actfunc,
+            ),
+            SELayer(decoder_base_channels * 4),
+        )
+        self.l4 = nn.Sequential(
+            UpShape(
+                decoder_base_channels * 4,
+                decoder_base_channels * 2,
+                actfunc,
+            ),
+            SELayer(decoder_base_channels * 2),
+        )
+        self.l5 = nn.Sequential(
+            UpShape(decoder_base_channels * 2, decoder_base_channels, actfunc),
+            SELayer(decoder_base_channels),
+        )
+        self.l6 = nn.Sequential(
+            UpShape(decoder_base_channels, input_channels, output_actfunc),
+            SELayer(input_channels),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.l1(x)
+        x = self.l2(x)
+        x = self.l3(x)
+        x = self.l4(x)
+        x = self.l5(x)
+        x = self.l6(x)
+
+        return x
+
+
+########################################
+
+
+class SECAE64(nn.Module):
+    def __init__(
+        self,
+        input_channels: int,
+        latent_dimensions: int,
+        encoder_base_channels: int,
+        decoder_base_channels: int,
+        encoder_actfunc: ActFuncName = "relu",
+        decoder_actfunc: ActFuncName = "relu",
+        encoder_output_actfunc: ActFuncName = "sigmoid",
+        decoder_output_actfunc: ActFuncName = "tanh",
+        device: Device = "cpu",
+    ) -> None:
+        super(SECAE64, self).__init__()
+        self.device = device
+        self.encoder = SEConvEncoder64(
+            input_channels,
+            encoder_base_channels,
+            latent_dimensions,
+            encoder_actfunc,
+            encoder_output_actfunc,
+            device,
+        )
+        self.decoder = SEConvDecoder64(
+            latent_dimensions,
+            decoder_base_channels,
+            input_channels,
+            decoder_actfunc,
+            decoder_output_actfunc,
+            device,
+        )
+
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        z = self.encoder(x)
+        x_pred = self.decoder(z)
+        return x_pred, z

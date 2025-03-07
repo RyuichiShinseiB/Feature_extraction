@@ -18,17 +18,21 @@ from ..mytyping import Device, Model, ModelName
 from ..utilities import find_project_root
 from ._MLP import MLP
 from ._ResNetVAE import DownSamplingResNet, ResNetVAE, UpSamplingResNet
-from ._SECAE32 import SECAE32
-from ._SECAE64 import SECAE64
-from ._SEConvVAE64 import SECVAE64
-from ._SEConvVAE_softplus64 import SECVAEsoftplus64
-from ._SimpleCAE16 import SimpleCAE16
-from ._SimpleCAE32 import SimpleCAE32
-from ._SimpleCAE64 import SimpleCAE64
-from ._SimpleCAE128 import SimpleCAE128
-from ._SimpleConvVAE64 import SimpleCVAE64
-from ._SimpleConvVAE_softplus32 import SimpleCVAEsoftplus32
-from ._SimpleConvVAE_softplus64 import SimpleCVAEsoftplus64
+from .ae import (
+    SECAE32,
+    SECAE64,
+    SimpleCAE16,
+    SimpleCAE32,
+    SimpleCAE64,
+    SimpleCAE128,
+)
+from .vae import (
+    SECVAE64,
+    SECVAEsoftplus64,
+    SimpleCVAE64,
+    SimpleCVAEsoftplus32,
+    SimpleCVAEsoftplus64,
+)
 
 
 class LoadModel(Enum):

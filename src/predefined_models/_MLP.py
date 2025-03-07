@@ -2,7 +2,7 @@ from collections.abc import Generator, Sequence
 
 from torch import nn
 
-from ..mytyping import ActFuncName, Tensor
+from ..mytyping import ActFunc, ActFuncName, Tensor
 from ._CNN_modules import add_actfunc
 
 
@@ -30,7 +30,7 @@ class MLP(nn.Module):
         self.final_layer = nn.Linear(middle_dimensions[-1], output_dimension)
         self.actfunc = add_actfunc(actfunc)
         if output_actfunc is None:
-            self.output_actfunc = (
+            self.output_actfunc: ActFunc = (
                 nn.Sigmoid() if output_dimension == 1 else nn.Softmax(1)
             )
         else:

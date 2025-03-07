@@ -3,6 +3,7 @@ from typing import Literal, TypeAlias
 
 # Third Party Library
 import torch
+from torch import nn
 from torchvision import transforms
 
 Model: TypeAlias = torch.nn.Module
@@ -41,6 +42,17 @@ ActFuncName = Literal[
     "softmax",
     "silu",
 ]
+ActFunc = (
+    nn.ReLU
+    | nn.SELU
+    | nn.LeakyReLU
+    | nn.Sigmoid
+    | nn.Tanh
+    | nn.Identity
+    | nn.Softplus
+    | nn.Softmax
+    | nn.SiLU
+)
 
 TransformsName = Literal[
     "Grayscale",

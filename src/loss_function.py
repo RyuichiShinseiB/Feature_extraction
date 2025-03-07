@@ -74,7 +74,7 @@ class LossFunction(nn.Module):
         reconst_error: Tensor = self.reconst_loss(pred, t)
         if self.latent_loss is not None and latent_params is not None:
             kldiv = self.latent_loss.forward(
-                latent_params[0], latent_params[1]
+                latent_params[-2], latent_params[-1]
             )
             return reconst_error, kldiv
         return reconst_error, None

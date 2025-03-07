@@ -150,7 +150,7 @@ def main(_cfg: DictConfig) -> None:
             valid_reconst_images: list[torch.Tensor] = []
 
             # 訓練
-            for i, (x, _) in enumerate(train_dataloader, 1):
+            for i, (x, *_) in enumerate(train_dataloader, 1):
                 # モデルの訓練
                 model.train()
 
@@ -176,7 +176,7 @@ def main(_cfg: DictConfig) -> None:
 
             # 検証
             with torch.no_grad():
-                for x, classes in val_dataloader:
+                for x, classes, _ in val_dataloader:
                     model.eval()
                     x = x.to(device)
                     reconst, latent_params = model(x)

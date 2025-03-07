@@ -57,9 +57,8 @@ def _write_loss_progress(
 
 @hydra.main(
     version_base=None,
-    config_path="../configs/train_conf",
-    config_name="ResNetVAE",
-    # config_name="SimpleCVAE",
+    config_path="../configs/train_conf/feature_extraction",
+    config_name="SimpleCAE",
 )
 def main(_cfg: DictConfig) -> None:
     # Display Configuration

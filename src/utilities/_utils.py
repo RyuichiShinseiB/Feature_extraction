@@ -178,11 +178,11 @@ def get_dataloader(
     else:
         splitted_dataset: list[Subset[ForExtractFolder | ImageFolder]] = (
             random_split(
-            dataset,
-            split_ratio,
-            generator=torch.Generator().manual_seed(generator_seed)
-            if generator_seed is not None
-            else None,
+                dataset,
+                split_ratio,
+                generator=torch.Generator().manual_seed(generator_seed)
+                if generator_seed is not None
+                else None,
             )
         )
         return (

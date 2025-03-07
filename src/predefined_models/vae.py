@@ -5,7 +5,7 @@ from ..mytyping import ActFuncName, Device, Tensor
 from ._CNN_modules import DownShape, SELayer, UpShape, add_actfunc
 
 
-class VAEEncoder32(nn.Module):
+class VAEEncoderSoftplus32(nn.Module):
     def __init__(
         self,
         input_channels: int = 1,
@@ -121,7 +121,7 @@ class SimpleCVAEsoftplus32(nn.Module):
         super().__init__()
         self.device = device
         self.latent_dimensions = latent_dimensions
-        self.encoder = VAEEncoder32(
+        self.encoder = VAEEncoderSoftplus32(
             input_channels,
             encoder_base_channels,
             latent_dimensions,

@@ -247,13 +247,13 @@ def main(_cfg: DictConfig) -> None:
                         epoch + 1,
                     )
 
-                    writer.add_embedding(
-                        torch.concat(valid_latent_means),
-                        metadata=torch.concat(valid_classes),
-                        global_step=epoch,
-                        tag="DistributionOnLatentSpace",
-                    )
-                    writer.flush()
+                    # writer.add_embedding(
+                    #     torch.concat(valid_latent_means).squeeze(),
+                    #     metadata=torch.concat(valid_classes),
+                    #     global_step=epoch,
+                    #     tag="DistributionOnLatentSpace",
+                    # )
+                    # writer.flush()
 
             if cfg.train.train_hyperparameter.early_stopping:
                 early_stopping(

@@ -2,7 +2,7 @@
 import itertools
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, TypeVar, overload
+from typing import Any, Literal, TypeVar, overload
 
 # Third Party Library
 import matplotlib
@@ -10,6 +10,7 @@ import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
 from matplotlib.colors import Colormap
@@ -32,17 +33,24 @@ NumArgCo = TypeVar(
     "NumArgCo", float, list[float], tuple[float, ...], covariant=True
 )
 
+IMG_EXT = {"pdf", "png", "svg"}
 
-def set_mpl_styles(*, fontsize: int = 15) -> None:
+
+def set_mpl_styles(
+    *,
+    fontsize: int = 15,
+    grid: bool = True,
+    tick_direction: Literal["in", "out", "inout"] = "in",
+    minor_ticks: bool = True,
+) -> None:
     plt.rcParams["font.family"] = "Times New Roman"
     plt.rcParams["mathtext.fontset"] = "stix"
     plt.rcParams["font.size"] = fontsize
-    plt.rcParams["xtick.direction"] = "in"
-    plt.rcParams["ytick.direction"] = "in"
-    plt.rcParams["axes.grid"] = True
-    plt.rcParams["axes.axisbelow"] = True
-    plt.rcParams["xtick.minor.visible"] = True
-    plt.rcParams["ytick.minor.visible"] = True
+    plt.rcParams["xtick.direction"] = tick_direction
+    plt.rcParams["ytick.direction"] = tick_direction
+    plt.rcParams["axes.grid"] = grid
+    plt.rcParams["xtick.minor.visible"] = minor_ticks
+    plt.rcParams["ytick.minor.visible"] = minor_ticks
 
 
 def cvt_unit(v: NumArgCo, old: str = "cm", new: str = "inch") -> NumArgCo:
@@ -84,9 +92,9 @@ def plot_cumulative_contribution_rate(
     ax.set_xlim(0, num_comp + 1)
     ax.set_ylim(bottom=0)
 
-    max_index_thresh = np.argmin([rate - threshold for rate in rates]).astype(
-        int
-    )
+    max_index_thresh = np.argmin(
+        [abs(rate - threshold) for rate in rates]
+    ).astype(int)
     num_use_features = max_index_thresh + 1
     if show_threshold:
         _, xaxis_right = ax.get_xlim()
@@ -358,14 +366,14 @@ def plot_scatter(
         data[ploting_axes[1]],
         s=size,
         marker=marker,
-        c=color,
+        color=color,
         label=scatter_label,
         # zorder=zorder,
         alpha=0.5,
     )
     x_range = ax.get_xlim()
     y_range = ax.get_ylim()
-    plot_range = np.max((*x_range, *y_range))
+    plot_range = np.max(np.abs((x_range, y_range)))
     ax.set_xlim(-plot_range, plot_range)
     ax.set_ylim(-plot_range, plot_range)
     if axis_labels is not None:
@@ -446,7 +454,7 @@ def plot_bar(
         return fig, ax, bar_cont
 
 
-def _align_xy_ticks_interval(ax: Axes) -> None:
+def align_xy_ticks_interval(ax: Axes) -> None:
     """Align the scale interval of the x-axis and y-axis to the larger one.
 
     Parameters
@@ -482,16 +490,98 @@ def _align_xy_ticks_interval(ax: Axes) -> None:
     ax.yaxis.set_major_locator(MultipleLocator(interval))
 
 
+def set_xy_axes_range(ax: Axes | Sequence[Axes]) -> None:
+    if isinstance(ax, Axes):
+        xrange = ax.get_xlim()
+        yrange = ax.get_ylim()
+        max_val = np.max(np.abs((xrange, yrange)))
+
+        ax.set_xlim(-max_val, max_val)
+        ax.set_ylim(-max_val, max_val)
+    elif isinstance(ax, Sequence):
+        xyranges = [(each_ax.get_xlim(), each_ax.get_ylim()) for each_ax in ax]
+        max_val = np.max(np.abs(xyranges))
+        _ = [
+            (
+                each_ax.set_xlim(-max_val, max_val),
+                each_ax.set_ylim(-max_val, max_val),
+            )
+            for each_ax in ax
+        ]
+
+
+@overload
+def plot_scatter_reflclsf_features(
+    data: np.ndarray,
+    metadata_df: pl.DataFrame,
+    ax: Axes | None = None,
+    plotting_dims: tuple[int, int] = (0, 1),
+    cmap: Colormap | None = None,
+    markers: dict[int, MarkerType] | None = None,
+    is_pca_data: bool = True,
+    is_rescaled_data: bool = False,
+    showing_legend: bool = False,
+) -> None:
+    ...
+
+
+@overload
 def plot_scatter_reflclsf_features(
     data: np.ndarray,
     metadata_df: pl.DataFrame,
     figsize_cm: tuple[float, float] = (14, 8),
     plotting_dims: tuple[int, int] = (0, 1),
     cmap: Colormap | None = None,
-    markers: Sequence[MarkerType] | None = None,
+    markers: dict[int, MarkerType] | None = None,
     is_pca_data: bool = True,
     is_rescaled_data: bool = False,
+    showing_legend: bool = False,
 ) -> Figure:
+    ...
+
+
+@overload
+def plot_scatter_reflclsf_features(
+    data: np.ndarray,
+    metadata_df: pl.DataFrame,
+    ax: Axes | None = None,
+    plotting_dims: tuple[int, int] = (0, 1),
+    cmap: Colormap | None = None,
+    markers: dict[int, MarkerType] | None = None,
+    is_pca_data: bool = True,
+    is_rescaled_data: bool = False,
+    showing_legend: bool = True,
+) -> list[Artist]:
+    ...
+
+
+@overload
+def plot_scatter_reflclsf_features(
+    data: np.ndarray,
+    metadata_df: pl.DataFrame,
+    figsize_cm: tuple[float, float] = (14, 8),
+    plotting_dims: tuple[int, int] = (0, 1),
+    cmap: Colormap | None = None,
+    markers: dict[int, MarkerType] | None = None,
+    is_pca_data: bool = True,
+    is_rescaled_data: bool = False,
+    showing_legend: bool = True,
+) -> tuple[Figure, list[Artist]]:
+    ...
+
+
+def plot_scatter_reflclsf_features(
+    data: np.ndarray,
+    metadata_df: pl.DataFrame,
+    ax: Axes | None = None,
+    figsize_cm: tuple[float, float] = (14, 8),
+    plotting_dims: tuple[int, int] = (0, 1),
+    cmap: Colormap | None = None,
+    markers: dict[int, MarkerType] | None = None,
+    is_pca_data: bool = True,
+    is_rescaled_data: bool = False,
+    showing_legend: bool = True,
+) -> Figure | list[Artist] | tuple[Figure, list[Artist]] | None:
     targets = metadata_df.select("target").unique()[:, 0]
     if is_pca_data and is_rescaled_data:
         label_prefix = "Rescaled PC"
@@ -506,11 +596,14 @@ def plot_scatter_reflclsf_features(
         for i in range(data.shape[1])
         if i in plotting_dims
     )
-    target_label = {0: "Low", 1: "High"}
+    target_label = {0: "Low", 1: "High", -1: "none"}
 
-    figsize = cvt_unit(figsize_cm, old="cm", new="inch")
-    fig = plt.figure(figsize=figsize, layout="constrained", dpi=100)  # type: ignore[arg-type]
-    ax = fig.add_subplot()
+    if ax is None:
+        figsize = cvt_unit(figsize_cm, old="cm", new="inch")
+        fig = plt.figure(figsize=figsize, layout="constrained", dpi=100)  # type: ignore[arg-type]
+        ax = fig.add_subplot()
+    else:
+        fig = None
 
     ax.set_xlabel(axis_labels[0])
     ax.set_ylabel(axis_labels[1])
@@ -519,7 +612,7 @@ def plot_scatter_reflclsf_features(
     if cmap is None:
         cmap = plt.get_cmap("tab10")
     if markers is None:
-        markers = ["v", "^", "d", "v"]
+        markers = {0: "v", 1: "^", -1: "o"}
 
     for t in targets:
         target_df = metadata_df.filter(pl.col("target") == t)
@@ -535,40 +628,48 @@ def plot_scatter_reflclsf_features(
             scatter_label=t,
         )
 
-    # legend
-    sample_legend_elems = [
-        Patch(color=cmap(d), label=d, alpha=0.5)
-        for d in metadata_df.select("dirname").unique()[:, 0]
-    ]
-    target_legend_elms = [
-        Line2D(
-            [0],
-            [0],
-            marker=markers[t],
-            linestyle="",
-            markeredgecolor="black",
-            markerfacecolor="none",
-            label=target_label[t],
+    legend_list: None | list[Artist] = None
+    if showing_legend:
+        # legend
+        sample_legend_elems = [
+            Patch(color=cmap(d), label=d, alpha=0.5)
+            for d in metadata_df.select("dirname").unique()[:, 0]
+        ]
+        target_legend_elms = [
+            Line2D(
+                [0],
+                [0],
+                marker=markers[t],
+                linestyle="",
+                markeredgecolor="black",
+                markerfacecolor="none",
+                label=target_label[t],
+            )
+            for t in targets
+        ]
+
+        target_legend = ax.legend(
+            handles=target_legend_elms,
+            title="Reflectance",
+            loc="lower left",
+            bbox_to_anchor=(1.04, 0.0),
         )
-        for t in targets
-    ]
+        sample_id_legend = ax.legend(  # noqa: F841
+            handles=sample_legend_elems,
+            title="Sample Number",
+            loc="upper left",
+            bbox_to_anchor=(1, 1),
+        )
+        # 複数回`ax.legend()`をしても、最後に追加した凡例しか表示されない
+        # ここで最初に追加した凡例を明示的に表示する
+        ax.add_artist(target_legend)
+        legend_list = [target_legend, sample_id_legend]
 
-    target_legend = ax.legend(
-        handles=target_legend_elms,
-        title="Reflectance",
-        loc="lower left",
-        bbox_to_anchor=(1.04, 0.0),
-    )
-    sample_id_legend = ax.legend(  # noqa: F841
-        handles=sample_legend_elems,
-        title="Sample Number",
-        loc="upper left",
-        bbox_to_anchor=(1, 1),
-    )
-    # 複数回`ax.legend()`をしても、最後に追加した凡例しか表示されない
-    # ここで最初に追加した凡例を明示的に表示する
-    ax.add_artist(target_legend)
+        align_xy_ticks_interval(ax)
 
-    _align_xy_ticks_interval(ax)
-
-    return fig
+    if fig is not None and legend_list is not None:
+        return fig, legend_list
+    elif fig is None and legend_list is not None:
+        return legend_list
+    elif fig is not None and legend_list is None:
+        return fig

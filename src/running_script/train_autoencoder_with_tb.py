@@ -21,7 +21,7 @@ from src.utilities import (
 
 
 def _mean(vals: list[float]) -> float:
-    if vals == []:
+    if vals == [] or vals[0] is None:
         return float("nan")
     return sum(vals) / len(vals)
 

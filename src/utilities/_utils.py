@@ -271,7 +271,7 @@ def extract_features(
     filenames_list: list[str] = []
     model.eval()
     with torch.no_grad():
-        for x, _, dirnames, filenames in tqdm(dataloader):
+        for x, *_, dirnames, filenames in tqdm(dataloader):
             _, features = model(x.to(device))
             if isinstance(features, tuple):
                 if len(features) == 2:

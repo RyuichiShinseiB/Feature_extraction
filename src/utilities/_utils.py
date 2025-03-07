@@ -85,8 +85,7 @@ def get_dataloader(
     extraction: bool = False,
     cls_conditions: dict[int, list[str]] | None = None,
     is_valid_file: Callable[[str], bool] | None = None,
-) -> DataLoader:
-    ...
+) -> DataLoader: ...
 
 
 @overload
@@ -101,8 +100,7 @@ def get_dataloader(
     extraction: bool = False,
     cls_conditions: dict[int, list[str]] | None = None,
     is_valid_file: Callable[[str], bool] | None = None,
-) -> tuple[DataLoader, DataLoader]:
-    ...
+) -> tuple[DataLoader, DataLoader]: ...
 
 
 @overload
@@ -116,8 +114,7 @@ def get_dataloader(
     extraction: bool = False,
     cls_conditions: dict[int, list[str]] | None = None,
     is_valid_file: Callable[[str], bool] | None = None,
-) -> tuple[DataLoader, DataLoader] | DataLoader:
-    ...
+) -> tuple[DataLoader, DataLoader] | DataLoader: ...
 
 
 def get_dataloader(
@@ -179,14 +176,14 @@ def get_dataloader(
     if split_ratio is None:
         return DataLoader(dataset, batch_size, shuffle, num_workers=2)
     else:
-        splitted_dataset: list[
-            Subset[ForExtractFolder | ImageFolder]
-        ] = random_split(
+        splitted_dataset: list[Subset[ForExtractFolder | ImageFolder]] = (
+            random_split(
             dataset,
             split_ratio,
             generator=torch.Generator().manual_seed(generator_seed)
             if generator_seed is not None
             else None,
+            )
         )
         return (
             DataLoader(

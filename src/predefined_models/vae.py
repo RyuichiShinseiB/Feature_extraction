@@ -264,6 +264,8 @@ class VAEEncoder64(nn.Module):
 
 
 ######################################################
+
+
 class VAEDecoder64(nn.Module):
     def __init__(
         self,
@@ -307,6 +309,8 @@ class VAEDecoder64(nn.Module):
 
 
 ###################################################################
+
+
 class SimpleCVAEsoftplus64(nn.Module):
     def __init__(
         self,

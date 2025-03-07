@@ -15,8 +15,10 @@ from src.utilities import extract_features, get_dataloader
 
 @hydra.main(
     version_base=None,
-    config_path="../configs/eval_conf/classification",
-    config_name="ResNetVAE-highlow",
+    # config_path="../configs/eval_conf/classification",
+    # config_name="ResNetVAE-highlow",
+    config_path="../configs/eval_conf/feature_extraction",
+    config_name="SimpleCAE",
 )
 def main(_cfg: DictConfig) -> None:
     cfg = v1.ExtractConfig.from_dictconfig(_cfg)

@@ -88,7 +88,7 @@ def sample_images(
             )
             paths = paths.sample(
                 min(num_sample, len(paths)),
-                with_replacement=True,
+                with_replacement=False,
                 shuffle=True,
             )
             images[i] = [Image.open(img_dir / p).convert("L") for p in paths]

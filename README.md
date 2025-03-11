@@ -5,6 +5,10 @@ Python + PyTorch で CNTフォレストの構造解析を行うリポジトリ�
 異常構造の検知はオートエンコーダで，反射率予測はResNetで行いました．
 
 # 使い方
+
+## リポジトリのダウンロード
+リポジトリをダウンロードするには、git を使っている方は `git clone <このリポジトリのurl>`で、それ以外の方は GitHub のこのページ上部にある緑色の「Code」というボタンから「Download ZIP」を押して zip ファイルをダウンロードしたのち解凍してください。
+
 ## 仮想環境の構築
 [!WARNING]
 このプロジェクトでは、pythonのバージョン管理に[pyenv](https://github.com/pyenv/pyenv)、パッケージと仮想環境の管理に[poetry](https://python-poetry.org/)を使っています。もし使っているパソコンに入っていなければそれぞれの installation または introduction を読んでインストールしてください。

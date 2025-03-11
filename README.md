@@ -1,8 +1,8 @@
 Feature extraction with Autoencoder
 ---
 
-Python + PyTorch で CNTフォレストの構造解析を行うリポジトリです。<br>
-異常構造の検知はオートエンコーダで、反射率予測はResNetで行いました。
+Python + PyTorch で CNTフォレストの構造解析を行うリポジトリです．  
+異常構造の検知はオートエンコーダで，反射率予測はResNetで行いました．
 
 # 使い方
 ## 仮想環境の構築

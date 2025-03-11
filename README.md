@@ -10,13 +10,36 @@ Python + PyTorch で CNTフォレストの構造解析を行うリポジトリ�
 リポジトリをダウンロードするには、git を使っている方は `git clone <このリポジトリのurl>`で、それ以外の方は GitHub のこのページ上部にある緑色の「Code」というボタンから「Download ZIP」を押して zip ファイルをダウンロードしたのち解凍してください。
 
 ## 仮想環境の構築
-[!WARNING]
-このプロジェクトでは、pythonのバージョン管理に[pyenv](https://github.com/pyenv/pyenv)、パッケージと仮想環境の管理に[poetry](https://python-poetry.org/)を使っています。もし使っているパソコンに入っていなければそれぞれの installation または introduction を読んでインストールしてください。
+> [!WARNING]
+> このプロジェクトでは，pythonのバージョン管理に[pyenv](https://github.com/pyenv/pyenv)，パッケージと仮想環境の管理に[poetry](https://python-poetry.org/)を使っています．もし使っているパソコンに入っていなければそれぞれの installation または introduction を読んでインストールしてください．
+>
+> もし他のパッケージ管理ツールを使っている方（venv，pipenv，uv，condaなど）はそれに合うように，pyproject.toml を編集してください．
 
-もし他のパッケージ管理ツールを使っている方（venv、pipenv、uv、condaなど）はそれに合うように、pyproject.toml を編集してください。
+その後，ターミナル上でクローン/ダウンロードしたディレクトリに移動して次のコマンドを実行してください．
 
-[!NOTE]
-pythonで仮想環境を使う意味は、必要なパッケージを必要な場所においておくためです。どういう状況でこの機能が欲しくなるのかは[この](https://www.python.jp/install/windows/venv.html#:~:text=Python%20%E3%82%92%E4%BD%BF,%E7%B4%B9%E4%BB%8B%E3%81%97%E3%81%BE%E3%81%99%E3%80%82)ページを参考にしてください。
+すると .venv という名前の新しいディレクトリが作成されて，pyproject.toml に書かれているパッケージがインストールされ仮想環境が構築されます．
+
+```bash
+poetry sync
+```
+
+仮想環境の中でプログラムを動かしたい場合には次の方法があります。
+
+```bash
+# 仮想環境の外から仮想環境を使う場合
+poetry run python <pythonスクリプトへのパス>
+
+# 仮想環境に入って使う場合
+## 仮想環境に入る．poetry のバージョンによってコマンドが違うことに注意．
+poetry shell # If poetry version < 2.0.0
+poetry env activate # If poetry version >= 2.0.0
+
+## プログラムの実行
+python <pythonスクリプトへのパス>
+```
+
+> [!NOTE]
+> pythonで仮想環境を使う意味は，必要なパッケージを必要な場所においておくためです．どういう状況でこの機能が欲しくなるのかは[この](https://www.python.jp/install/windows/venv.html#:~:text=Python%20%E3%82%92%E4%BD%BF,%E7%B4%B9%E4%BB%8B%E3%81%97%E3%81%BE%E3%81%99%E3%80%82)ページを参考にしてください．
 
 ## モデルの訓練と検証の実行
 src/running_script ディレクトリの中に、モデルの訓練用と訓練終了後のモデルの検証用（特徴ベクトルの可視化や分類）のスクリプトが入っています。

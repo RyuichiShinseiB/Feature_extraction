@@ -4,6 +4,47 @@ Feature extraction with Autoencoder
 Python + PyTorch で CNTフォレストの構造解析を行うリポジトリです．  
 異常構造の検知はオートエンコーダで，反射率予測はResNetで行いました．
 
+# ディレクトリ構成
+
+```
+├── LICENSE            <- オープンソースライセンス
+├── README.md          <- プロジェクトについて書かれた README ファイル．このファイル．
+├── data
+│   ├── external       <- サードパーティー製のデータセット
+│   ├── interim        <- raw データを処理した中間データ
+│   ├── processed      <- 最終的に処理されたデータ
+│   └── raw            <- 元データ
+│
+├── models             <- 訓練済みモデルのパラメータが保存されているディレクトリ
+│
+├── notebooks          <- Jupyter notebooks. 
+│                         一時的にプログラムを書きたかったり，図を確認しながら作りたいときに使う．
+│
+├── pyproject.toml     <- プロジェクトの設定が書かれたファイル
+│
+├── reports            <- モデルから得られたものを保存するディレクトリ
+│   └── figures        <- モデルから作られた散布図が画像を比較する図などのディレクトリ
+│   └── features       <- モデルから得られた特徴量
+│
+└── src   <- Source code for use in this project.
+    │
+    ├── __init__.py             <- Makes test_ccds a Python module
+    │
+    ├── config.py               <- Store useful variables and configuration
+    │
+    ├── dataset.py              <- Scripts to download or generate data
+    │
+    ├── features.py             <- Code to create features for modeling
+    │
+    ├── modeling                
+    │   ├── __init__.py 
+    │   ├── predict.py          <- Code to run model inference with trained models          
+    │   └── train.py            <- Code to train models
+    │
+    └── plots.py                <- Code to create visualizations
+```
+
+
 # 使い方
 
 ## リポジトリのダウンロード

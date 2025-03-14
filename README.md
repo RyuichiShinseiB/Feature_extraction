@@ -17,31 +17,56 @@ Python + PyTorch で CNTフォレストの構造解析を行うリポジトリ�
 │
 ├── models             <- 訓練済みモデルのパラメータが保存されているディレクトリ
 │
-├── notebooks          <- Jupyter notebooks. 
-│                         一時的にプログラムを書きたかったり，図を確認しながら作りたいときに使う．
+├── notebooks          <- Jupyter notebooks. 一時的にプログラムを書きたかったり，図を確認しながら作りたいときに使う．
 │
 ├── pyproject.toml     <- プロジェクトの設定が書かれたファイル
 │
 ├── reports            <- モデルから得られたものを保存するディレクトリ
-│   └── figures        <- モデルから作られた散布図が画像を比較する図などのディレクトリ
+│   ├── figures        <- モデルから作られた散布図が画像を比較する図などのディレクトリ
 │   └── features       <- モデルから得られた特徴量
 │
-└── src   <- Source code for use in this project.
+└── src   <- モデルの定義や実行用スクリプトなどのソース
     │
-    ├── __init__.py             <- Makes test_ccds a Python module
+    ├── config                  <- モデルの設定
+    │   ├── model_configs       <- python スクリプトで使用するコンフィグクラス
+    │   │   └── __init__.py            <- Code to train models
+    │   │
+    │   ├── train_conf          <- 訓練用のコンフィグ yaml ファイル
+    │   │   └── classification         <- 分類モデルのコンフィグ
+    │   │   └── feature_extraction     <- 特徴抽出モデル（オートエンコーダ）のコンフィグ
+    │   │
+    │   └── eval_conf           <- 検証用のコンフィグ yaml ファイル
+    │       └── classification         <- 分類モデルのコンフィグ
+    │       └── feature_extraction     <- 特徴抽出モデル（オートエンコーダ）のコンフィグ
     │
-    ├── config.py               <- Store useful variables and configuration
+    ├── features                <- raw データを interim そして processed に処理するスクリプト
     │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
+    ├── predefined_models       <- モデルを定義する python ファイル
     │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
+    │   ├── ae.py               <- オートエンコーダ用
+    │   ├── vae.py              <- VAE用
+    │   ├── _build_VAE.py       <- 他モジュール類からVAEを組み立てるよう
+    │   └── ...
     │
-    └── plots.py                <- Code to create visualizations
+    ├── running_script          <- 訓練や検証を行う用のスクリプトが入っているディレクトリ
+    │   ├── __init__.py 
+    │   ├── feature_extractionv1.py         <- 訓練済み AE または VAE から特徴ベクトルを抽出
+    │   ├── train_autoencoder_with_tb.py    <- AE または VAE の訓練
+    │   └── ...
+    │
+    ├── utilities               <- データセットの読み込みに使うクラスやプロジェクトのルートを探す関数などのユーティリティ
+    │   ├── __init__.py 
+    │   ├── _utils.py         
+    │   └── ...
+    │
+    ├── visualization           <- 可視化に用いる関数など
+    │   ├── __init__.py 
+    │   ├── image_utils.py         
+    │   └── ...
+    │
+    ├── loss_function.py        <- 損失関数自体の定義や損失関数もろもろの処理をまとめたもの
+    │
+    └── mytyping.py             <- モデル定義などで使う型の定義
 ```
 
 
